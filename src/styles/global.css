@@ -1,0 +1,155 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. One neutral palette + one accent (vermilion, a nod to the
+ * Japanese art direction of the TFG). Light/dark follow prefers-color-scheme.
+ *
+ * Radius system: interactive elements (buttons, tags) 8px, containers
+ * (cards, media) 12px.
+ */
+:root {
+  color-scheme: light dark;
+
+  --canvas: #f5f5f3;
+  --surface: #fbfbfa;
+  --sunken: #ececea;
+  --ink: #151514;
+  --muted: #5f5f5b;
+  --line: rgb(21 21 20 / 0.1);
+  --line-strong: rgb(21 21 20 / 0.24);
+  --accent: #c73e1d;
+  --accent-ink: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #0f0f0e;
+    --surface: #171716;
+    --sunken: #1d1d1c;
+    --ink: #ededea;
+    --muted: #9c9c96;
+    --line: rgb(237 237 234 / 0.1);
+    --line-strong: rgb(237 237 234 / 0.26);
+    --accent: #f06a45;
+    --accent-ink: #0f0f0e;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+
+  --font-sans: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+@layer components {
+  /* Buttons: press feedback per Emil (scale on :active, transform only). */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding-inline: 1.125rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    transition:
+      transform 160ms var(--ease-out-strong),
+      background-color 200ms ease,
+      border-color 200ms ease;
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn-primary {
+    background-color: var(--ink);
+    color: var(--canvas);
+  }
+  .btn-secondary {
+    border: 1px solid var(--line-strong);
+    color: var(--ink);
+  }
+  @media (hover: hover) {
+    .btn-primary:hover {
+      background-color: color-mix(in oklab, var(--ink) 86%, var(--canvas));
+    }
+    .btn-secondary:hover {
+      border-color: var(--ink);
+    }
+  }
+
+  /* Inline text link with an underline that tightens on hover. */
+  .link {
+    text-decoration-line: underline;
+    text-decoration-color: var(--line-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.25em;
+    transition: text-decoration-color 200ms ease;
+  }
+  @media (hover: hover) {
+    .link:hover {
+      text-decoration-color: var(--accent);
+    }
+  }
+}
+
+/*
+ * Hero entrance: one staggered rise on first paint. It sets the reading order
+ * (name, role, actions, portrait). Disabled entirely under reduced motion.
+ */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise 700ms var(--ease-out-strong) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+}

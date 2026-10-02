@@ -1,0 +1,56 @@
+---
+import { DownloadSimple, GithubLogo, LinkedinLogo } from '@phosphor-icons/react/ssr';
+import { profile } from '../data/profile';
+
+const socials = [
+  { label: 'LinkedIn', href: profile.linkedin, Icon: LinkedinLogo },
+  { label: 'GitHub', href: profile.github, Icon: GithubLogo },
+];
+---
+
+<section
+  id="contacto"
+  aria-labelledby="contacto-title"
+  class="scroll-mt-16 border-t border-line"
+>
+  <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28 lg:px-8">
+    <h2 id="contacto-title" class="text-4xl font-bold tracking-[-0.03em] md:text-5xl">Contacto</h2>
+    <p class="mt-4 max-w-xl text-lg leading-relaxed text-muted">
+      {profile.availability}. Escríbeme a:
+    </p>
+
+    <a
+      href={`mailto:${profile.email}`}
+      class="group mt-8 inline-block text-[clamp(1.375rem,5.4vw,3.5rem)] leading-tight font-bold tracking-[-0.03em] break-all sm:break-normal"
+    >
+      <span
+        class="bg-[linear-gradient(var(--accent),var(--accent))] bg-[length:0%_2px] bg-left-bottom bg-no-repeat pb-1 transition-[background-size] duration-300 ease-out group-hover:bg-[length:100%_2px]"
+      >
+        {profile.email}
+      </span>
+    </a>
+
+    <div class="mt-12 flex flex-wrap items-center gap-3">
+      {
+        socials.map(({ label, href, Icon }) =>
+          href ? (
+            <a href={href} class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+              <Icon size={18} weight="bold" aria-hidden="true" />
+              {label}
+            </a>
+          ) : (
+            <span class="btn border border-dashed border-line-strong text-muted">
+              <Icon size={18} weight="bold" aria-hidden="true" />
+              {label}
+              <span class="font-mono text-xs">TODO: URL</span>
+            </span>
+          ),
+        )
+      }
+      <a href={profile.cv} download class="btn btn-primary">
+        <DownloadSimple size={18} weight="bold" aria-hidden="true" />
+        Descargar CV
+      </a>
+    </div>
+  </div>
+</section>

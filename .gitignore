@@ -1,0 +1,69 @@
+# --- Build output ---
+dist/
+.output/
+
+# --- Generated types (Astro) ---
+.astro/
+
+# --- Dependencies ---
+node_modules/
+.pnpm-store/
+.yarn/
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Environment variables and secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Deploy (Vercel) ---
+.vercel/
+
+# --- Caches and tool output ---
+.cache/
+.eslintcache
+.prettiercache
+.lighthouseci/
+coverage/
+*.tsbuildinfo
+
+# --- Claude Code (skills and local settings) ---
+.claude/
+
+# --- Private source files (the CV source contains the phone number; only the PDF is published) ---
+*.docx
+~$*
+
+# --- 3D working files (only the exported .glb goes in public/models/) ---
+*.blend1
+*.blend@
+
+# --- Editors ---
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# --- Temporary files ---
+*.tmp
+tmp/
+temp/

@@ -1,0 +1,26 @@
+---
+// Reserved slot for media that does not exist yet (renders, screenshots,
+// the 3D viewer). Keeps the final aspect ratio so nothing shifts later.
+import { Cube, ImageSquare } from '@phosphor-icons/react/ssr';
+
+interface Props {
+  kind?: 'image' | 'model';
+  label: string;
+  class?: string;
+}
+
+const { kind = 'image', label, class: className } = Astro.props;
+const Icon = kind === 'model' ? Cube : ImageSquare;
+---
+
+<div
+  class:list={[
+    'flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-line-strong bg-sunken p-6 text-center text-muted',
+    className,
+  ]}
+  role="img"
+  aria-label={`Espacio reservado: ${label}`}
+>
+  <Icon size={28} weight="regular" aria-hidden="true" />
+  <span class="font-mono text-xs">{label}</span>
+</div>

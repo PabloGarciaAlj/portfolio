@@ -1,0 +1,52 @@
+---
+import { ArrowRight } from '@phosphor-icons/react/ssr';
+import { education, languages } from '../data/profile';
+---
+
+<section
+  id="formacion"
+  aria-labelledby="formacion-title"
+  class="mx-auto max-w-6xl scroll-mt-16 px-4 pb-20 sm:px-6 md:pb-28 lg:px-8"
+>
+  <div class="grid gap-10 rounded-xl bg-sunken p-6 sm:p-8 md:grid-cols-12 md:gap-10 md:p-12">
+    <div class="md:col-span-7">
+      <h2 id="formacion-title" class="font-mono text-xs text-muted">Formación</h2>
+      <p class="mt-4 text-2xl font-bold tracking-[-0.02em] text-balance md:text-3xl">
+        {education.degree}
+      </p>
+      <p class="mt-2 text-muted">
+        {education.school}
+        <span class="font-mono text-[0.8125rem] whitespace-nowrap"> ({education.period})</span>
+      </p>
+      <p class="mt-4 leading-relaxed text-muted">
+        {education.track}. Competencias: {education.competencies.join(', ')}.
+      </p>
+      <a
+        href={`/proyectos/${education.thesisSlug}/`}
+        class="link group mt-6 inline-flex items-center gap-2 font-medium"
+      >
+        TFG: personaje 3D para videojuego de acción
+        <span
+          class="transition-transform duration-200 ease-out group-hover:translate-x-0.5"
+          aria-hidden="true"
+        >
+          <ArrowRight size={16} weight="bold" />
+        </span>
+      </a>
+    </div>
+
+    <div class="md:col-span-5 md:border-l md:border-line-strong md:pl-10">
+      <h2 class="font-mono text-xs text-muted">Idiomas</h2>
+      <dl class="mt-4 space-y-3">
+        {
+          languages.map((lang) => (
+            <div class="flex items-baseline justify-between gap-4 border-b border-line pb-3 last:border-b-0">
+              <dt class="font-medium">{lang.name}</dt>
+              <dd class="font-mono text-[0.8125rem] text-muted">{lang.level}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </div>
+</section>
