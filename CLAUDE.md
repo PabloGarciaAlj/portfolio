@@ -61,7 +61,7 @@ muestra de su criterio de diseño y de su nivel técnico.
 | Animación | **CSS** primero; **Motion** (`motion/react`) para springs, layout y salidas | Criterio de las skills de Emil Kowalski: CSS para hover, estados y entradas simples; Motion solo cuando haga falta. |
 | Navegación | **View Transitions** de Astro (`<ClientRouter />`) | Transición continua de la tarjeta de un proyecto a su página de detalle. |
 | Contenido | **Content Collections** + MDX (`@astrojs/mdx`) con esquema Zod | Cada proyecto es un archivo `.mdx` validado. |
-| 3D | **`<model-viewer>`** (Google) con un `.glb` exportado de Blender | Para mostrar el personaje del TFG. Carga diferida. Solo si se queda corto, pasar a React Three Fiber. |
+| 3D | **React Three Fiber** + **drei** (three.js) con un `.glb` exportado de Blender | Un solo motor para el visor del TFG y para el futuro personaje animado con el scroll en la landing. La escena es una isla React cargada bajo demanda (`React.lazy`), así three.js no pesa en la carga inicial. |
 | Imágenes | `astro:assets` (`<Image />`, `<Picture />`) | AVIF/WebP y tamaños responsive automáticos. |
 | Fuentes | Autoalojadas (`@font-face` + `font-display: swap`) o la API de fuentes de Astro si es estable | No enlazar Google Fonts con `<link>` en producción. |
 | Iconos | Un único set ligero y coherente (p. ej. Phosphor) | Ver anti-patrones en la sección 8. |
@@ -107,7 +107,7 @@ pequeña y aislada. El layout nunca se hidrata entero.
 ├── astro.config.mjs
 ├── public/
 │   ├── cv/CV_Pablo_Garcia_Aljibe.pdf     # CV descargable (lo exporta Pablo desde Word)
-│   ├── models/character.glb              # personaje del TFG (comprimido)
+│   ├── models/character.glb              # personaje del TFG (optimizado, ver sección 10)
 │   └── favicon.svg
 └── src/
     ├── content.config.ts                 # esquema Zod de la colección `projects`
@@ -178,7 +178,10 @@ const projects = defineCollection({
       role: z.string(),
       stack: z.array(z.string()),
       cover: image().optional(),
-      model: z.string().optional(),          // ruta a un .glb en /public/models
+      coverAlt: z.string().optional(),
+      gallery: z.array(z.object({ src: image(), alt: z.string(), caption: z.string().optional() })).optional(),
+      // visor 3D: .glb en /public/models, póster (render del encuadre inicial) y alt
+      model: z.object({ src: z.string(), poster: image(), alt: z.string() }).optional(),
       links: z.object({ demo: z.string().url().optional(), repo: z.string().url().optional() }).optional(),
       confidential: z.boolean().default(false), // true = sin capturas ni nombres de cliente
       featured: z.boolean().default(true),
@@ -356,14 +359,42 @@ Por decidir con Pablo (regla 4). Restricciones que ya están claras:
 
 ## 10. 3D (personaje del TFG)
 
-- Exportar desde Blender a **glTF binario (`.glb`)** con compresión Draco o Meshopt y
-  texturas reducidas (máx. 2K, WebP/KTX2 si es posible). Objetivo: **menos de 5 MB**.
-  `TODO (Pablo):` exportar el modelo y dejarlo en `public/models/`.
-- `<model-viewer>` con `loading="lazy"`, `reveal="interaction"` o un póster (render
-  estático) hasta que el usuario interactúe, `camera-controls` y `auto-rotate` suave.
-- Si el `.glb` incluye animaciones (idle, ataque), exponerlas con un control simple.
-- El script de `<model-viewer>` solo se carga en la página que lo usa.
-- Accesible: `alt` descriptivo y un póster para quien no cargue WebGL.
+**Motor:** React Three Fiber + drei (decidido con Pablo el 2026-10-02, en lugar de
+`<model-viewer>`). Componentes: `CharacterViewer.tsx` (isla ligera: póster, botón y
+controles) y `CharacterStage.tsx` (escena; se descarga con `React.lazy` al pulsar
+"Ver en 3D").
+
+**Visor en la página del TFG (hecho):**
+
+- Solo el personaje, sin animaciones. Cámara orbital alrededor del personaje, zoom hacia
+  el cursor, sin desplazamiento lateral y sin bajar del suelo. Botones de girar, acercar,
+  alejar y restablecer para teclado y lectores de pantalla.
+- Iluminación: hemisférica suave, luz principal y de contorno, y un entorno con
+  `Lightformer` (sin descargar HDRI de un CDN) para que los metales reflejen algo.
+- Póster: render del encuadre inicial con fondo transparente. Es lo que ve quien no tiene
+  JS ni WebGL, y lo que se ve antes de pulsar el botón.
+- El tamaño de descarga que muestra el botón se calcula al compilar a partir del archivo.
+
+**Personaje en la landing (pendiente):** al llegar a la sección del TFG, el personaje
+entra en pantalla con una animación (caminar) que avanza con el scroll (`useScroll` de
+Motion; sin GSAP ni Lenis). Con `prefers-reduced-motion` o sin JS, imagen estática. De
+momento la tarjeta del TFG usa como portada un render de poses.
+
+**Optimización del modelo.** El `.glb` original de Blender (523 MB) no se sube al repo. Se
+procesa con `gltf-transform` desde un script aparte, sin añadirlo al proyecto:
+
+- Quitar las animaciones **y sus samplers** (si no, sus datos quedan huérfanos en el archivo).
+- Materiales: Blender los exportó todos como `BLEND`. Pasan a `OPAQUE` (el pelo a `MASK`),
+  **manteniendo la doble cara** (el kimono caído es un plano sin grosor).
+- Simplificar con meshoptimizer, más fuerte en las cuerdas de sandalias y cinturón y en el
+  pelo. Resultado actual: unos 193.000 triángulos.
+- Texturas a WebP: color base de piel y kimono a 2K, el resto a 1K, metal/rugosidad a 512.
+- Compresión meshopt. Resultado actual: **7 MB**.
+
+`TODO (Pablo):` para las animaciones de la landing, reexportar desde Blender con **Deform
+Bones Only** (hoy el esqueleto tiene 412 huesos por los de control de Rigify) y solo las
+2–3 animaciones elegidas (hoy hay 39, muchas duplicadas). El material `Iris` llega sin
+textura (ojos blancos): revisarlo en Blender.
 
 ---
 
@@ -399,4 +430,4 @@ Por decidir con Pablo (regla 4). Restricciones que ya están claras:
 | Qué proyectos de prácticas se pueden nombrar y con qué material | Pendiente: Pablo |
 | ¿Versión en inglés? | De momento solo español. Si se añade, usar el i18n nativo de Astro (`/en/`). |
 | URL de LinkedIn, GitHub y dominio | Pendiente: Pablo |
-| ¿Guiño 3D en el hero o solo en la página del TFG? | Pendiente: decidir con la dirección visual |
+| 3D en la web | Decidido: React Three Fiber. Visor en la página del TFG (hecho). Personaje animado con el scroll en la sección del TFG de la landing (pendiente de reexportar el modelo con animaciones). |

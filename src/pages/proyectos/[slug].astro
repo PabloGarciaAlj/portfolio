@@ -1,11 +1,14 @@
 ---
 import { render } from 'astro:content';
-import { Picture } from 'astro:assets';
+import { Picture, getImage } from 'astro:assets';
+import { statSync } from 'node:fs';
+import { join } from 'node:path';
 import { ArrowLeft, ArrowRight, ArrowUpRight } from '@phosphor-icons/react/ssr';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import MediaPlaceholder from '../../components/MediaPlaceholder.astro';
+import CharacterViewer from '../../components/CharacterViewer.tsx';
 import { contextLabel, getProjects, type Project } from '../../lib/projects';
 import { profile } from '../../data/profile';
 
@@ -31,6 +34,14 @@ const { project, prev, next } = Astro.props;
 const { title, summary, context, year, role, stack, links, confidential, model, cover, coverAlt, gallery } =
   project.data;
 const { Content } = await render(project);
+
+// Poster and download size for the 3D viewer, resolved at build time.
+const modelPoster = model
+  ? await getImage({ src: model.poster, width: 1600, format: 'webp' })
+  : null;
+const modelSize = model
+  ? `${Math.round(statSync(join(process.cwd(), 'public', model.src)).size / 1e6)} MB`
+  : null;
 ---
 
 <BaseLayout title={`${title} · ${profile.name}`} description={summary}>
@@ -68,7 +79,21 @@ const { Content } = await render(project);
     </dl>
 
     {
-      cover ? (
+      model && modelPoster && modelSize ? (
+        <div class="mt-10">
+          <CharacterViewer
+            client:visible
+            src={model.src}
+            size={modelSize}
+            alt={model.alt}
+            poster={{
+              src: modelPoster.src,
+              width: Number(modelPoster.attributes.width),
+              height: Number(modelPoster.attributes.height),
+            }}
+          />
+        </div>
+      ) : cover ? (
         <Picture
           src={cover}
           alt={coverAlt ?? `Captura de ${title}`}
@@ -81,7 +106,7 @@ const { Content } = await render(project);
         />
       ) : !confidential && (
         <MediaPlaceholder
-          kind={context === 'tfg' || model ? 'model' : 'image'}
+          kind={context === 'tfg' ? 'model' : 'image'}
           label={context === 'tfg' ? 'Visor 3D del personaje (pendiente)' : 'Imagen principal (pendiente)'}
           class="mt-10 aspect-[16/9]"
         />

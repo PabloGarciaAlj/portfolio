@@ -17,7 +17,9 @@ const projects = defineCollection({
       gallery: z
         .array(z.object({ src: image(), alt: z.string(), caption: z.string().optional() }))
         .optional(),
-      model: z.string().optional(), // path to a .glb in /public/models
+      // 3D viewer on the detail page: .glb in /public/models, a poster shown until
+      // the visitor loads it (and to anyone without JS or WebGL), and its alt text.
+      model: z.object({ src: z.string(), poster: image(), alt: z.string() }).optional(),
       links: z.object({ demo: z.url().optional(), repo: z.url().optional() }).optional(),
       confidential: z.boolean().default(false), // true = no screenshots or client names
       featured: z.boolean().default(true),
