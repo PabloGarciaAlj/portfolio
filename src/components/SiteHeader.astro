@@ -1,5 +1,6 @@
 ---
 import { profile } from '../data/profile';
+import Logo from '../assets/logo.svg';
 
 const links = [
   { href: '/#proyectos', label: 'Proyectos' },
@@ -16,8 +17,14 @@ const links = [
     aria-label="Principal"
     class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-4 sm:px-6 lg:px-8"
   >
-    <a href="/" class="font-medium tracking-tight whitespace-nowrap">
-      {profile.name}
+    {/* PGA monogram (same mark as the favicon), inlined so it takes the text
+        colour of each theme. The link keeps the full name for assistive tech. */}
+    <a
+      href="/"
+      aria-label={`${profile.name}, inicio`}
+      class="-m-2 rounded-lg p-2 transition-opacity duration-200 ease-out hover:opacity-70"
+    >
+      <Logo class="block h-8 w-auto" aria-hidden="true" focusable="false" />
     </a>
     <ul class="flex items-center gap-5 text-[0.9375rem] text-muted sm:gap-7">
       {

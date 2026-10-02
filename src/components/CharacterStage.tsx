@@ -1,7 +1,17 @@
-import { Suspense, useEffect, useImperativeHandle, useLayoutEffect, useMemo, type Ref } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Suspense, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, type Ref } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls, useGLTF, useProgress } from '@react-three/drei';
-import { Box3, NeutralToneMapping, Vector3, type Object3D } from 'three';
+import {
+  AnimationClip,
+  AnimationMixer,
+  Box3,
+  LoopOnce,
+  LoopRepeat,
+  NeutralToneMapping,
+  Vector3,
+  type AnimationAction,
+  type Object3D,
+} from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 // The character is normalised to this height (scene units) so camera limits
@@ -12,6 +22,10 @@ const FOV = 30;
 const MIN_DISTANCE = 0.9;
 const ZOOM_STEP = 0.85;
 const ROTATE_STEP = Math.PI / 12;
+// Cross-fade between two clips, in seconds.
+const FADE = 0.3;
+// Caps the mixer step so a long pause (hidden tab, held idle) does not jump the clip.
+const MAX_STEP = 0.25;
 
 export interface StageHandle {
   rotate: (direction: 1 | -1) => void;
@@ -19,14 +33,25 @@ export interface StageHandle {
   reset: () => void;
 }
 
+/** A clip the visitor can play: looping (walk, sneak) or once (attacks). */
+export interface Clip {
+  clip: string;
+  loop: boolean;
+}
+
 interface Props {
   src: string;
   handle: Ref<StageHandle>;
   onReady: () => void;
   onProgress: (percent: number) => void;
+  /** Clip that plays when nothing else does; null leaves the bind pose. */
+  idle: string | null;
+  /** Clip to play instead of the idle, or null. */
+  clip: Clip | null;
+  onClipEnd: () => void;
 }
 
-export default function CharacterStage({ src, handle, onReady, onProgress }: Props) {
+export default function CharacterStage({ src, handle, onReady, onProgress, idle, clip, onClipEnd }: Props) {
   return (
     <>
       <ProgressReporter onProgress={onProgress} />
@@ -49,15 +74,7 @@ export default function CharacterStage({ src, handle, onReady, onProgress }: Pro
         </Environment>
 
         <Suspense fallback={null}>
-          <Character src={src} onReady={onReady} />
-          <ContactShadows
-            position={[0, 0.001, 0]}
-            scale={3}
-            blur={2.4}
-            far={1.2}
-            opacity={0.45}
-            frames={1}
-          />
+          <Character src={src} idle={idle} clip={clip} onClipEnd={onClipEnd} onReady={onReady} />
         </Suspense>
 
         <Rig handle={handle} />
@@ -66,34 +83,146 @@ export default function CharacterStage({ src, handle, onReady, onProgress }: Pro
   );
 }
 
+function useReducedMotion() {
+  return useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
+}
+
 function ProgressReporter({ onProgress }: { onProgress: (percent: number) => void }) {
   const progress = useProgress((state) => state.progress);
   useEffect(() => onProgress(progress), [progress, onProgress]);
   return null;
 }
 
-function Character({ src, onReady }: { src: string; onReady: () => void }) {
-  // No Draco: the file uses meshopt, whose decoder ships with three-stdlib.
-  const { scene } = useGLTF(src, false, true);
+// useGLTF caches the loaded scene across mounts (and across view-transition
+// navigations), so it must never be transformed in place: a second visit would
+// measure the already scaled copy. The framing is measured once per scene, on
+// the pristine one, and applied to a wrapping group instead.
+const framings = new WeakMap<Object3D, { scale: number; offset: Vector3 }>();
 
-  const model = useMemo(() => {
+function getFraming(scene: Object3D) {
+  let framing = framings.get(scene);
+  if (!framing) {
     const box = new Box3().setFromObject(scene);
     const size = box.getSize(new Vector3());
     const center = box.getCenter(new Vector3());
     const scale = HEIGHT / size.y;
-    scene.scale.setScalar(scale);
-    scene.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
-    scene.traverse((child: Object3D) => {
+    framing = { scale, offset: new Vector3(-center.x, -box.min.y, -center.z).multiplyScalar(scale) };
+    framings.set(scene, framing);
+    scene.traverse((child) => {
       // Skinned bounds are computed in bind pose; avoid parts popping out
-      // when the camera gets close.
+      // when the camera gets close or the character moves.
       child.frustumCulled = false;
     });
-    return scene;
-  }, [scene]);
+  }
+  return framing;
+}
+
+interface CharacterProps {
+  src: string;
+  idle: string | null;
+  clip: Clip | null;
+  onClipEnd: () => void;
+  onReady: () => void;
+}
+
+function Character({ src, idle, clip, onClipEnd, onReady }: CharacterProps) {
+  // No Draco: the file uses meshopt, whose decoder ships with three-stdlib.
+  const { scene, animations } = useGLTF(src, false, true);
+  const { scale, offset } = getFraming(scene);
+  const invalidate = useThree((state) => state.invalidate);
+  const reducedMotion = useReducedMotion();
+
+  const mixer = useMemo(() => new AnimationMixer(scene), [scene]);
+  const current = useRef<AnimationAction | null>(null);
+  const fading = useRef(new Set<AnimationAction>());
+  const onClipEndRef = useRef(onClipEnd);
+  useEffect(() => {
+    onClipEndRef.current = onClipEnd;
+  }, [onClipEnd]);
+
+  // Under reduced motion the idle holds its first pose; clips the visitor asks
+  // for still play. The contact shadow only re-renders while something moves.
+  const holdIdle = reducedMotion && !clip;
+
+  // Leave the cached scene in its rest pose for the next mount.
+  useEffect(
+    () => () => {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(scene);
+    },
+    [mixer, scene],
+  );
+
+  // One-shot clips (attacks) hand control back when they finish.
+  useEffect(() => {
+    const onFinished = (event: { action: AnimationAction }) => {
+      if (event.action === current.current) onClipEndRef.current();
+    };
+    mixer.addEventListener('finished', onFinished);
+    return () => mixer.removeEventListener('finished', onFinished);
+  }, [mixer]);
+
+  const target = clip?.clip ?? idle;
+  const once = clip ? !clip.loop : false;
+  useEffect(() => {
+    const source = target ? AnimationClip.findByName(animations, target) : null;
+    const next = source ? mixer.clipAction(source) : null;
+    const previous = current.current;
+    if (next) {
+      fading.current.delete(next);
+      next.reset();
+      next.setLoop(once ? LoopOnce : LoopRepeat, Infinity);
+      next.clampWhenFinished = once;
+      next.paused = false;
+      // The first pose appears directly; later changes cross-fade.
+      if (previous && previous !== next) next.fadeIn(FADE);
+      next.play();
+    }
+    if (previous && previous !== next) {
+      previous.fadeOut(FADE);
+      fading.current.add(previous);
+    }
+    current.current = next;
+    invalidate();
+  }, [animations, invalidate, mixer, once, target]);
+
+  // Pausing (not stopping) keeps the idle's pose applied while it holds still.
+  useEffect(() => {
+    if (current.current) current.current.paused = holdIdle;
+    invalidate();
+  }, [holdIdle, invalidate, target]);
+
+  useFrame((_, delta) => {
+    mixer.update(Math.min(delta, MAX_STEP));
+    for (const action of fading.current) {
+      if (action.getEffectiveWeight() === 0) {
+        action.stop();
+        fading.current.delete(action);
+      }
+    }
+    const moving = (current.current && !current.current.paused) || fading.current.size > 0;
+    if (moving) invalidate();
+  });
 
   useEffect(() => onReady(), [onReady]);
 
-  return <primitive object={model} />;
+  return (
+    <>
+      <group scale={scale} position={offset}>
+        <primitive object={scene} />
+      </group>
+      <ContactShadows
+        // Remount when motion stops so the still shadow matches the held pose.
+        key={holdIdle ? 'still' : 'live'}
+        position={[0, 0.001, 0]}
+        scale={3}
+        blur={2.4}
+        far={1.2}
+        opacity={0.45}
+        frames={holdIdle ? 1 : Infinity}
+      />
+    </>
+  );
 }
 
 /** Orbit controls framed on the character, plus the imperative API used by the buttons. */
@@ -103,18 +232,19 @@ function Rig({ handle }: { handle: Ref<StageHandle> }) {
   const aspect = useThree((state) => state.size.width / state.size.height);
   const invalidate = useThree((state) => state.invalidate);
 
-  // Distance that fits the whole character (T-pose is about as wide as tall)
-  // with some air around it, for the current aspect ratio.
+  // Distance that fits the whole character with some air around it. Width only
+  // decides on narrow (portrait) viewers; half a body height each side leaves
+  // room for the katana in the attacks.
   const fitDistance = useMemo(() => {
     const vFov = (FOV * Math.PI) / 180;
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
     const byHeight = (HEIGHT * 0.62) / Math.tan(vFov / 2);
-    const byWidth = (HEIGHT * 0.58) / Math.tan(hFov / 2);
+    const byWidth = (HEIGHT * 0.5) / Math.tan(hFov / 2);
     return Math.max(byHeight, byWidth);
   }, [aspect]);
   const maxDistance = fitDistance * 1.5;
   // Orbit inertia keeps the camera moving after release: off under reduced motion.
-  const reducedMotion = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
+  const reducedMotion = useReducedMotion();
 
   useLayoutEffect(() => {
     camera.position.set(fitDistance * 0.26, TARGET.y + 0.15, fitDistance * 0.96);
@@ -167,9 +297,10 @@ function Rig({ handle }: { handle: Ref<StageHandle> }) {
       rotateSpeed={0.7}
       minDistance={MIN_DISTANCE}
       maxDistance={maxDistance}
-      // Never below the floor, never straight down from above.
-      minPolarAngle={0.25}
-      maxPolarAngle={Math.PI / 2 - 0.04}
+      // Almost a top view, and a little below the floor to see the soles,
+      // without flipping over the poles.
+      minPolarAngle={0.08}
+      maxPolarAngle={Math.PI * 0.62}
     />
   );
 }

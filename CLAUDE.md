@@ -79,6 +79,7 @@ npm create astro@latest .        # solo la primera vez (plantilla mínima, TypeS
 npx astro add react mdx          # integraciones
 npm install tailwindcss @tailwindcss/vite motion
 npm run dev                      # http://localhost:4321
+npm run dev -- --force           # tras cambiar el esquema de content.config.ts (vacía la caché de contenido)
 npm run build && npm run preview # comprobar la build de producción
 npx astro check                  # tipos y contenido
 ```
@@ -206,8 +207,8 @@ usar este esquema tal cual.
 - **Ubicación:** Elche, España
 - **Estado:** disponible para incorporación inmediata
 - **Email:** pablogarcialjibe04@gmail.com
-- **LinkedIn:** `TODO: URL completa del perfil` (usuario: pablo-garcía-aljibe)
-- **GitHub:** `TODO`
+- **LinkedIn:** https://www.linkedin.com/in/pablo-garcía-aljibe/ (en el código, con la «í» codificada)
+- **GitHub:** https://github.com/PabloGarciaAlj
 - **Teléfono:** no se publica.
 
 **Resumen:**
@@ -248,7 +249,7 @@ salvo que Pablo lo confirme.
 | `contratacion-publica-ia` | Gestión de expedientes de contratación pública con IA (AUREA) | Prácticas, 2026 | Generación asistida de documentos con LLMs, biblioteca de ejemplos con búsqueda semántica (RAG, embeddings, pgvector), colas de trabajo con BullMQ, corrección de vulnerabilidades de autorización tras una auditoría de seguridad. | Fastify, Prisma, PostgreSQL + pgvector, Redis, BullMQ, MinIO, React, Vite |
 | `asistente-voz-mayores` | Asistente conversacional y de voz para personas mayores (IBH · Amy) | Prácticas, 2026 | Panel de control y dashboard de valores biométricos en Angular 19 + Tailwind, con componentes accesibles, sobre una API Fastify integrada con OpenAI y Gemini. | Angular 19, Tailwind, Fastify, Prisma, PostgreSQL |
 | `legaltech-reclamaciones` | Plataforma legal-tech de reclamaciones aéreas (Juridocraft) | Prácticas, 2026 | Migración del frontend React a la API propia; procesamiento de PDF/DOCX con OCR. | React, Vite, Fastify, Prisma, PostgreSQL, Tesseract.js |
-| `crowdcompass` | CrowdCompass | Académico, 2025 – 2026 | Web de gestión de eventos con modelo 3D interactivo y chatbot, en producción en crowdcompass.ovh. Despliegue propio con Apache y SSH; metodología ABP. | Angular, TypeScript, Node.js, MySQL, Apache |
+| `crowdcompass` | CrowdCompass | Académico, 2025 – 2026 | Web de gestión de eventos con modelo 3D interactivo y chatbot, en producción en crowdcompass.ovh. Despliegue propio con Apache y SSH; metodología ABP. Equipo de cinco. **Parte de Pablo (confirmada):** landing, `/home` de usuario y login; interfaz del chatbot y su conexión frontend → backend → Dialogflow (el agente y sus intents no son suyos); servidor OVH completo (Apache, HTTPS con Let's Encrypt, cabeceras de seguridad y CSP, despliegues). 158 de 463 commits. | Angular, TypeScript, Node.js, MySQL, Apache |
 | `digitalforge` | DigitalForge | Académico, 2025 | Gestión de assets digitales (imagen, 3D, audio, vídeo) con carga, etiquetado y búsqueda. **Prioridad baja:** `featured: false` o al final. | React |
 
 `TODO (Pablo):` confirmar el rol exacto en cada proyecto de prácticas, qué se puede
@@ -366,13 +367,29 @@ controles) y `CharacterStage.tsx` (escena; se descarga con `React.lazy` al pulsa
 
 **Visor en la página del TFG (hecho):**
 
-- Solo el personaje, sin animaciones. Cámara orbital alrededor del personaje, zoom hacia
-  el cursor, sin desplazamiento lateral y sin bajar del suelo. Botones de girar, acercar,
-  alejar y restablecer para teclado y lectores de pantalla.
+- Cámara orbital alrededor del personaje, zoom hacia el cursor y sin desplazamiento
+  lateral. En vertical llega casi a la vista cenital y baja un poco por debajo del suelo
+  (para ver las suelas). Botones de girar, acercar, alejar y restablecer para teclado y
+  lectores de pantalla.
+- Animaciones (datos en `model.idle` y `model.animations` del MDX):
+  - **Idle** (`Stay_Idle_Retarget`) en bucle como pose por defecto, en lugar de la pose T.
+    Con `prefers-reduced-motion` se queda quieto en su primer fotograma.
+  - **Movimiento** (bucles, interruptor ▶/⏸): «Andar» (`Walking_Hurt`) y «Agachado»
+    (`Crouched_Sneaking`).
+  - **Ataques** (`loop: false`, se reproducen una vez y vuelven solos al idle): «Ataque
+    básico» (`Slash_Basico`) y «Ataque complejo» (`Slack_Complejo`).
+  - Fundido de 0,3 s entre clips. La cámara no se toca: todo se reproduce en el sitio.
+  - En escritorio los controles flotan sobre el visor (animaciones arriba a la derecha,
+    cámara abajo a la derecha). En móvil van debajo, para no tapar al personaje, y
+    aparecen desactivados al pulsar «Ver en 3D» para que la página no salte al cargar.
+- Póster: render del primer fotograma del idle (generado con movimiento reducido).
+- **Nunca transformar la escena que devuelve `useGLTF`:** está en caché entre visitas
+  (también al navegar con View Transitions). El encuadre se mide una vez y se aplica a un
+  grupo que la envuelve; al desmontar, el mezclador se para para dejarla en reposo.
 - Iluminación: hemisférica suave, luz principal y de contorno, y un entorno con
   `Lightformer` (sin descargar HDRI de un CDN) para que los metales reflejen algo.
-- Póster: render del encuadre inicial con fondo transparente. Es lo que ve quien no tiene
-  JS ni WebGL, y lo que se ve antes de pulsar el botón.
+- El póster tiene fondo transparente y el encuadre inicial. Es lo que ve quien no tiene JS
+  ni WebGL, y lo que se ve antes de pulsar el botón.
 - El tamaño de descarga que muestra el botón se calcula al compilar a partir del archivo.
 
 **Personaje en la landing (pendiente):** al llegar a la sección del TFG, el personaje
@@ -383,18 +400,25 @@ momento la tarjeta del TFG usa como portada un render de poses.
 **Optimización del modelo.** El `.glb` original de Blender (523 MB) no se sube al repo. Se
 procesa con `gltf-transform` desde un script aparte, sin añadirlo al proyecto:
 
-- Quitar las animaciones **y sus samplers** (si no, sus datos quedan huérfanos en el archivo).
+- Conservar solo los 5 clips del visor (por defecto en el script) y borrar el resto **con
+  sus samplers** (si no, sus datos quedan huérfanos en el archivo). De los 39 clips del
+  original, las versiones sin `Retarget` están vacías y el resto son duplicados.
+- **Solo pistas de huesos que deforman:** de los 412 huesos del rig se conservan los 126
+  con peso en algún vértice, los que sostienen piezas rígidas (máscara, pelo, katana) y sus
+  antecesores. El resto son controles de Rigify.
+- **Animaciones en el sitio** (equivalente al script de Unity): el avance de la cadera
+  (`DEF-spine`) fotograma a fotograma se resta de todos los huesos que cuelgan de la raíz
+  y avanzan con ella. El cuerpo se queda en el sitio; los pies y las manos conservan su
+  movimiento relativo (pasos, estocadas) y se mantienen el balanceo y la altura.
 - Materiales: Blender los exportó todos como `BLEND`. Pasan a `OPAQUE` (el pelo a `MASK`),
   **manteniendo la doble cara** (el kimono caído es un plano sin grosor).
 - Simplificar con meshoptimizer, más fuerte en las cuerdas de sandalias y cinturón y en el
   pelo. Resultado actual: unos 193.000 triángulos.
 - Texturas a WebP: color base de piel y kimono a 2K, el resto a 1K, metal/rugosidad a 512.
-- Compresión meshopt. Resultado actual: **7 MB**.
+- `resample` de las animaciones y compresión meshopt. Resultado actual: **7,6 MB** con los
+  5 clips.
 
-`TODO (Pablo):` para las animaciones de la landing, reexportar desde Blender con **Deform
-Bones Only** (hoy el esqueleto tiene 412 huesos por los de control de Rigify) y solo las
-2–3 animaciones elegidas (hoy hay 39, muchas duplicadas). El material `Iris` llega sin
-textura (ojos blancos): revisarlo en Blender.
+`TODO (Pablo):` el material `Iris` llega sin textura (ojos blancos): revisarlo en Blender.
 
 ---
 
@@ -429,5 +453,6 @@ textura (ojos blancos): revisarlo en Blender.
 | Dirección visual (paleta, tipografía, layout del hero) | Pendiente: proponer 2–3 opciones |
 | Qué proyectos de prácticas se pueden nombrar y con qué material | Pendiente: Pablo |
 | ¿Versión en inglés? | De momento solo español. Si se añade, usar el i18n nativo de Astro (`/en/`). |
-| URL de LinkedIn, GitHub y dominio | Pendiente: Pablo |
+| URL de LinkedIn y GitHub | Hecho (sección 7.1) |
+| Dominio | Pendiente: Pablo |
 | 3D en la web | Decidido: React Three Fiber. Visor en la página del TFG (hecho). Personaje animado con el scroll en la sección del TFG de la landing (pendiente de reexportar el modelo con animaciones). |

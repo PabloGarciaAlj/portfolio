@@ -3,17 +3,22 @@
 // Usage (the tools are not project dependencies; install them without saving):
 //   npm install --no-save @gltf-transform/core @gltf-transform/extensions \
 //     @gltf-transform/functions meshoptimizer sharp
-//   node scripts/optimize-character.mjs <source.glb> public/models/character.glb [error]
+//   node scripts/optimize-character.mjs <source.glb> public/models/character.glb [error] [animations]
 //
 // `error` is the global simplification tolerance (default 0.0005; 0 disables it).
+// `animations` is a comma-separated list of clips to keep (default: the idle, walk,
+// sneak and the two attacks used by the viewer).
+// Kept clips are made to play in place (root motion removed).
 import { statSync } from 'node:fs';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
-import { dedup, prune, weld, simplify, simplifyPrimitive, meshopt } from '@gltf-transform/functions';
+import { dedup, prune, resample, weld, simplify, simplifyPrimitive, meshopt } from '@gltf-transform/functions';
 import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 
-const [, , input, output, errArg = '0.0005'] = process.argv;
+const DEFAULT_CLIPS = 'Stay_Idle_Retarget,Walking_Hurt,Crouched_Sneaking,Slash_Basico,Slack_Complejo';
+const [, , input, output, errArg = '0.0005', keepArg = DEFAULT_CLIPS] = process.argv;
+const KEEP = new Set(keepArg.split(',').filter(Boolean));
 await MeshoptEncoder.ready;
 await MeshoptSimplifier.ready;
 
@@ -23,16 +28,107 @@ const io = new NodeIO()
 const doc = await io.read(input);
 const root = doc.getRoot();
 
-// 1. No animations for now.
+// 1. Animations: keep only the requested clips. Disposing an animation alone
+// leaves its samplers holding the keyframe accessors, so dispose those too;
+// prune() later removes the orphaned accessors.
 for (const anim of root.listAnimations()) {
-  // Disposing the animation alone leaves its samplers holding the keyframe accessors.
-  for (const sampler of anim.listSamplers()) {
-    sampler.getInput()?.dispose();
-    sampler.getOutput()?.dispose();
-    sampler.dispose();
-  }
+  if (KEEP.has(anim.getName())) continue;
+  for (const sampler of anim.listSamplers()) sampler.dispose();
   for (const channel of anim.listChannels()) channel.dispose();
   anim.dispose();
+}
+const missing = [...KEEP].filter((name) => !root.listAnimations().some((a) => a.getName() === name));
+if (missing.length) throw new Error(`Animations not found: ${missing.join(', ')}`);
+
+// Most of the rig's 412 bones are Rigify controls (MCH, ORG, IK, VIS…) that never
+// move a vertex. Keep only the tracks of bones that do: joints with weight on
+// some vertex, the nodes rigid parts hang from (mask, hair, katana), and all
+// their ancestors. The rest of the tracks are dropped.
+{
+  const needed = new Set();
+  const addWithAncestors = (node) => {
+    for (let n = node; n && !needed.has(n); n = n.getParentNode()) needed.add(n);
+  };
+  for (const node of root.listNodes()) {
+    if (!node.getMesh()) continue;
+    addWithAncestors(node);
+    const skin = node.getSkin();
+    if (!skin) continue;
+    const joints = skin.listJoints();
+    for (const prim of node.getMesh().listPrimitives()) {
+      const ids = prim.getAttribute('JOINTS_0');
+      const weights = prim.getAttribute('WEIGHTS_0');
+      if (!ids || !weights) continue;
+      for (let i = 0; i < ids.getCount(); i++) {
+        const j = ids.getElement(i, []);
+        const w = weights.getElement(i, []);
+        for (let k = 0; k < 4; k++) if (w[k] > 0) addWithAncestors(joints[j[k]]);
+      }
+    }
+  }
+  let dropped = 0;
+  for (const anim of root.listAnimations()) {
+    for (const channel of anim.listChannels()) {
+      if (needed.has(channel.getTargetNode())) continue;
+      channel.getSampler()?.dispose();
+      channel.dispose();
+      dropped++;
+    }
+  }
+  console.log(`animation tracks: kept bones ${needed.size}, dropped ${dropped} tracks`);
+}
+
+// In place (like baking root motion into the pose in Unity). In clips that
+// travel, the rig's root-level bones (hips, torso, IK targets) all move forward
+// together. The hips' forward progress, frame by frame, is subtracted from each
+// of them along its own travel direction, so the body stays put while feet and
+// hands keep their motion relative to the hips (steps, lunges). Sideways sway
+// and vertical bob are untouched; children of those bones only carry local motion.
+const HIPS = 'DEF-spine';
+const ROOT_MOTION_THRESHOLD = 0.5;
+
+const track = (channel) => {
+  const sampler = channel.getSampler();
+  if (sampler.getInterpolation() === 'CUBICSPLINE') throw new Error('CUBICSPLINE tracks are not supported');
+  const times = sampler.getInput();
+  const values = sampler.getOutput();
+  const t = Array.from({ length: times.getCount() }, (_, i) => times.getElement(i, [])[0]);
+  const v = Array.from({ length: values.getCount() }, (_, i) => values.getElement(i, []));
+  const drift = v[0].map((x, k) => v[v.length - 1][k] - x);
+  return { sampler, t, v, drift, length: Math.hypot(...drift) };
+};
+
+// Linear interpolation of a sampled curve at time `time`.
+const sampleAt = (t, y, time) => {
+  if (time <= t[0]) return y[0];
+  for (let i = 1; i < t.length; i++) {
+    if (time <= t[i]) return y[i - 1] + ((y[i] - y[i - 1]) * (time - t[i - 1])) / (t[i] - t[i - 1]);
+  }
+  return y[y.length - 1];
+};
+
+for (const anim of root.listAnimations()) {
+  const translations = anim.listChannels().filter((c) => c.getTargetPath() === 'translation');
+  const hipsChannel = translations.find((c) => c.getTargetNode()?.getName() === HIPS);
+  if (!hipsChannel) continue;
+  const hips = track(hipsChannel);
+  if (hips.length < ROOT_MOTION_THRESHOLD) continue; // the clip does not travel
+  const dir = hips.drift.map((x) => x / hips.length);
+  const progress = hips.v.map((p) => p.reduce((sum, x, k) => sum + (x - hips.v[0][k]) * dir[k], 0));
+
+  for (const channel of translations) {
+    const { sampler, t, v, drift, length } = track(channel);
+    if (length < ROOT_MOTION_THRESHOLD) continue;
+    const own = drift.map((x) => x / length);
+    const scale = length / hips.length;
+    // Tracks may share their time accessor: write to a copy of the output only.
+    const out = sampler.getOutput().clone();
+    sampler.setOutput(out);
+    v.forEach((p, i) => {
+      const travelled = sampleAt(hips.t, progress, t[i]) * scale;
+      out.setElement(i, p.map((x, k) => x - travelled * own[k]));
+    });
+  }
 }
 
 // 2. Everything was exported as alpha BLEND, which breaks depth sorting.
@@ -82,7 +178,8 @@ for (const tex of root.listTextures()) {
 }
 
 // 5. Compression.
-await doc.transform(dedup(), prune(), meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
+// resample() drops keyframes that linear interpolation already reproduces.
+await doc.transform(resample(), dedup(), prune(), meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
 await io.write(output, doc);
 
 let tris = 0;

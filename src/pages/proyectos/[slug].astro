@@ -46,46 +46,37 @@ const modelSize = model
 
 <BaseLayout title={`${title} · ${profile.name}`} description={summary}>
   <SiteHeader />
-  <main id="contenido" class="mx-auto max-w-6xl px-4 pt-10 pb-20 sm:px-6 md:pt-14 md:pb-28 lg:px-8">
+  <main id="contenido" class="mx-auto max-w-6xl px-4 pt-6 pb-20 sm:px-6 md:pt-8 md:pb-28 lg:px-8">
     <a href="/#proyectos" class="link inline-flex items-center gap-2 text-[0.9375rem] text-muted">
       <ArrowLeft size={16} weight="bold" aria-hidden="true" />
       Todos los proyectos
     </a>
 
-    <header class="mt-10 max-w-3xl">
-      <p class="font-mono text-xs text-muted">{contextLabel[context]} · {year}</p>
-      <h1
-        class="mt-4 text-4xl leading-[1.05] font-bold tracking-[-0.03em] text-balance md:text-6xl"
-        transition:name={`project-title-${project.id}`}
-      >
-        {title}
-      </h1>
-      <p class="mt-5 text-lg leading-relaxed text-pretty text-muted md:text-xl">{summary}</p>
+    {/* The work leads: title and summary stay compact so the main media lands in
+        the first viewport. Role and stack move below it. */}
+    <header class="mt-6 grid gap-4 md:mt-8 lg:grid-cols-12 lg:items-end lg:gap-x-10">
+      <div class="lg:col-span-8">
+        <p class="font-mono text-xs text-muted">{contextLabel[context]} · {year}</p>
+        <h1
+          class="mt-3 text-4xl leading-[1.05] font-bold tracking-[-0.03em] text-balance md:text-6xl"
+          transition:name={`project-title-${project.id}`}
+        >
+          {title}
+        </h1>
+      </div>
+      <p class="text-lg leading-relaxed text-pretty text-muted lg:col-span-4">{summary}</p>
     </header>
-
-    <dl class="mt-10 grid gap-6 border-y border-line py-6 sm:grid-cols-3">
-      <div>
-        <dt class="font-mono text-xs text-muted">Rol</dt>
-        <dd class="mt-1">{role}</dd>
-      </div>
-      <div>
-        <dt class="font-mono text-xs text-muted">Contexto</dt>
-        <dd class="mt-1">{contextLabel[context]}</dd>
-      </div>
-      <div>
-        <dt class="font-mono text-xs text-muted">Tecnologías</dt>
-        <dd class="mt-1">{stack.join(', ')}</dd>
-      </div>
-    </dl>
 
     {
       model && modelPoster && modelSize ? (
-        <div class="mt-10">
+        <div class="mt-6 md:mt-8 lg:[&_figure]:aspect-auto lg:[&_figure]:h-[clamp(26rem,calc(100dvh-22rem),42.5rem)] lg:[&_figure>img]:object-contain">
           <CharacterViewer
             client:visible
             src={model.src}
             size={modelSize}
             alt={model.alt}
+            idle={model.idle}
+            animations={model.animations}
             poster={{
               src: modelPoster.src,
               width: Number(modelPoster.attributes.width),
@@ -102,16 +93,31 @@ const modelSize = model
           formats={['avif', 'webp']}
           loading="eager"
           fetchpriority="high"
-          class="mt-10 w-full rounded-xl border border-line"
+          class="mt-6 w-full rounded-xl border border-line md:mt-8 lg:mx-auto lg:max-h-[max(26rem,calc(100dvh-22rem))] lg:w-auto lg:max-w-full"
         />
       ) : !confidential && (
         <MediaPlaceholder
           kind={context === 'tfg' ? 'model' : 'image'}
           label={context === 'tfg' ? 'Visor 3D del personaje (pendiente)' : 'Imagen principal (pendiente)'}
-          class="mt-10 aspect-[16/9]"
+          class="mt-6 aspect-[16/9] md:mt-8 lg:aspect-auto lg:h-[clamp(26rem,calc(100dvh-22rem),38rem)]"
         />
       )
     }
+
+    <dl class="mt-10 grid gap-6 border-y border-line py-6 sm:grid-cols-3">
+      <div>
+        <dt class="font-mono text-xs text-muted">Rol</dt>
+        <dd class="mt-1">{role}</dd>
+      </div>
+      <div>
+        <dt class="font-mono text-xs text-muted">Contexto</dt>
+        <dd class="mt-1">{contextLabel[context]}</dd>
+      </div>
+      <div>
+        <dt class="font-mono text-xs text-muted">Tecnologías</dt>
+        <dd class="mt-1">{stack.join(', ')}</dd>
+      </div>
+    </dl>
 
     <article
       class="mt-12 max-w-[68ch] text-lg leading-relaxed [&_h2]:mt-12 [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:tracking-[-0.02em] [&_li]:text-muted [&_li]:marker:text-line-strong [&_li+li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:text-muted [&_p+ol]:mt-4 [&_p+p]:mt-4 [&_p+ul]:mt-4 [&_ul]:list-disc [&_ul]:pl-6 [&_strong]:font-medium [&_strong]:text-ink [&_code]:font-mono [&_code]:text-[0.85em]"
@@ -123,19 +129,21 @@ const modelSize = model
       gallery && gallery.length > 0 && (
         <section aria-labelledby="galeria-title" class="mt-16">
           <h2 id="galeria-title" class="text-2xl font-bold tracking-[-0.02em]">
-            Capturas
+            Galería
           </h2>
-          <div class="mt-6 grid items-start gap-x-4 gap-y-10 md:grid-cols-2">
+          {/* Portrait (phone) captures pair up side by side at every width, so on
+              phones they don't stack into several screens of scroll. */}
+          <div class="mt-6 grid grid-cols-2 items-start gap-x-3 gap-y-10 sm:gap-x-4">
             {gallery.map((item) => {
               const landscape = item.src.width >= item.src.height;
               return (
-                <figure class:list={[landscape ? 'md:col-span-2' : 'mx-auto w-full max-w-sm']}>
+                <figure class:list={[landscape ? 'col-span-2' : 'mx-auto w-full max-w-sm']}>
                   <Picture
                     src={item.src}
                     alt={item.alt}
                     widths={landscape ? [640, 960, 1280, 1920] : [360, 540, 720]}
                     sizes={
-                      landscape ? '(min-width: 1152px) 1088px, 92vw' : '(min-width: 768px) 384px, 92vw'
+                      landscape ? '(min-width: 1152px) 1088px, 92vw' : '(min-width: 768px) 384px, 46vw'
                     }
                     formats={['avif', 'webp']}
                     class="w-full rounded-xl border border-line"

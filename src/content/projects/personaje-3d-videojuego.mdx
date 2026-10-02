@@ -3,31 +3,52 @@ title: Personaje 3D para videojuego de acción
 summary: Personaje de estética japonesa y fantasía oscura, desde las siluetas hasta su integración en un prototipo jugable en Unity.
 context: tfg
 year: '2026'
-role: 'TODO: confirmar rol'
+role: 'Proyecto individual: diseño, modelado, texturizado, rigging, animación e integración'
 stack: [Blender, Substance 3D Painter, Rigify, Mixamo, Rokoko Studio Live, Unity]
 cover: ../../assets/projects/personaje-3d-videojuego/poses.webp
 coverAlt: 'Render del personaje en seis poses: en T, agachado al acecho, en guardia con la katana desenvainada y de pie.'
 model:
   src: /models/character.glb
   poster: ../../assets/projects/personaje-3d-videojuego/viewer-poster.webp
-  alt: 'Modelo 3D del personaje en pose T: kimono negro con flores doradas, máscara dorada, vendas en los antebrazos, sandalias waraji y katana.'
+  idle: Stay_Idle_Retarget
+  animations:
+    - clip: Walking_Hurt
+      label: Andar
+    - clip: Crouched_Sneaking
+      label: Agachado
+    - clip: Slash_Basico
+      label: Ataque básico
+      loop: false
+    - clip: Slack_Complejo
+      label: Ataque complejo
+      loop: false
+  alt: 'Modelo 3D del personaje en reposo, con la katana en la mano: kimono negro con flores doradas, máscara dorada, vendas en los antebrazos y sandalias waraji.'
 confidential: false
 featured: true
 order: 1
 ---
 
-## Problema
+## Objetivo
 
-TODO: contexto y objetivo del TFG.
+Mi Trabajo Fin de Grado en Ingeniería Multimedia: diseñar y crear un personaje 3D original para un prototipo de videojuego de acción, recorriendo todo el pipeline de producción, desde la idea hasta el motor. Partía sin formación en dibujo ni concept art.
 
-## Qué hice
+## Proceso
 
-Recorrí el proceso completo de producción de un personaje: siluetas y referencias, modelado, UVs, texturizado PBR, rig, animación e integración en motor. La estética es japonesa, con fantasía oscura en la línea de los soulslike.
+- **Diseño:** siluetas en Krita y tableros de referencias en PureRef (indumentaria japonesa, peinados, armas, poses de combate).
+- **Modelado en Blender:** cuerpo base femenino por modelado poligonal; máscara esculpida con un corte lateral que deja ver parte del rostro; pelo con hair cards; katana en versiones low y high poly; kimono, pantalones, vendas, cinturón con cuerdas trenzadas y sandalias waraji.
+- **Texturizado PBR** en Substance 3D Painter: baking a 4K y materiales de tela, piel y metal con desgaste, suciedad y sangre.
+- **Rig** con Rigify y corrección manual de pesos con Weight Painting.
+- **Animación:** cinco clips de Mixamo (reposo, caminar herido, avance agachado y dos ataques con katana) adaptados al rig con Rokoko Studio Live.
+- **Unity (URP):** Animator Controller, script de control con teclado o mando y cámara en tercera persona con Cinemachine.
 
 ## Decisiones técnicas
 
-TODO
+- **Malla de densidad baja o media** desde el principio, sin depender de la subdivisión, para controlar la topología y el número de polígonos.
+- **Katana high → low poly:** el detalle de biseles y relieves se hornea en texturas para mantener una geometría ligera.
+- **Rig sin huesos faciales**, porque el personaje no tiene animación facial. Las piezas rígidas (máscara, pelo, cuerdas, katana) van emparentadas a un hueso y no se deforman.
+- **Retargeting reutilizable:** el mapeado de huesos entre Mixamo y Rigify se configuró una vez, se exportó a JSON y se aplicó al resto de animaciones.
+- **Movimiento por script** en lugar de Root Motion, que no interpretaba bien algunas animaciones. Desplazamiento relativo a la cámara y transiciones suavizadas entre estados.
 
 ## Resultado
 
-Un prototipo jugable para Windows. TODO: detalles y material visual.
+Un prototipo ejecutable para Windows en el que el personaje recorre un escenario, alterna entre caminar y avanzar agachado y lanza dos ataques, con una cámara orbital en tercera persona.

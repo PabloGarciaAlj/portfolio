@@ -19,7 +19,20 @@ const projects = defineCollection({
         .optional(),
       // 3D viewer on the detail page: .glb in /public/models, a poster shown until
       // the visitor loads it (and to anyone without JS or WebGL), and its alt text.
-      model: z.object({ src: z.string(), poster: image(), alt: z.string() }).optional(),
+      model: z
+        .object({
+          src: z.string(),
+          poster: image(),
+          alt: z.string(),
+          // Clip that plays by default instead of the bind (T) pose.
+          idle: z.string().optional(),
+          // Clips the visitor can play, by their name in the .glb. `loop: false`
+          // plays once and returns to the idle (attacks).
+          animations: z
+            .array(z.object({ clip: z.string(), label: z.string(), loop: z.boolean().default(true) }))
+            .default([]),
+        })
+        .optional(),
       links: z.object({ demo: z.url().optional(), repo: z.url().optional() }).optional(),
       confidential: z.boolean().default(false), // true = no screenshots or client names
       featured: z.boolean().default(true),

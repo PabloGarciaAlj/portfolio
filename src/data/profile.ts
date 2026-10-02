@@ -9,10 +9,9 @@ export const profile = {
   positioning:
     'Desarrollo aplicaciones web completas, de la base de datos a la interfaz, con integración de IA y producción 3D.',
   email: 'pablogarcialjibe04@gmail.com',
-  // TODO: full profile URL (username: pablo-garcía-aljibe)
-  linkedin: null as string | null,
-  // TODO: GitHub profile URL
-  github: null as string | null,
+  // Percent-encoded "í" so the URL is valid everywhere it is used.
+  linkedin: 'https://www.linkedin.com/in/pablo-garc%C3%ADa-aljibe/',
+  github: 'https://github.com/PabloGarciaAlj',
   cv: '/cv/CV_Pablo_Garcia_Aljibe.pdf',
 };
 
