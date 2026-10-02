@@ -13,6 +13,10 @@ const projects = defineCollection({
       role: z.string(),
       stack: z.array(z.string()),
       cover: image().optional(),
+      coverAlt: z.string().optional(), // descriptive alt for the cover on the detail page
+      gallery: z
+        .array(z.object({ src: image(), alt: z.string(), caption: z.string().optional() }))
+        .optional(),
       model: z.string().optional(), // path to a .glb in /public/models
       links: z.object({ demo: z.url().optional(), repo: z.url().optional() }).optional(),
       confidential: z.boolean().default(false), // true = no screenshots or client names

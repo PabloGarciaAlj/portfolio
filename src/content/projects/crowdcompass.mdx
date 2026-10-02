@@ -1,10 +1,24 @@
 ---
 title: CrowdCompass
-summary: Web de gestión de eventos con un modelo 3D interactivo y un chatbot, en producción con despliegue propio en Apache.
+summary: Web de eventos que convierte tu entrada en un recorrido 3D guiado hasta tu asiento, con un chatbot contextual. En producción.
 context: académico
 year: '2025 - 2026'
 role: 'TODO: confirmar rol'
-stack: [Angular, TypeScript, Node.js, MySQL, Apache]
+stack:
+  [
+    Angular 16,
+    TypeScript,
+    WebGL,
+    Three.js,
+    Tailwind CSS,
+    Node.js,
+    Express,
+    Sequelize,
+    MySQL,
+    Dialogflow,
+    Docker,
+    Apache,
+  ]
 links:
   demo: https://crowdcompass.ovh
 confidential: false
@@ -14,16 +28,34 @@ order: 6
 
 ## Problema
 
-TODO
+En un recinto grande, como un estadio, cuesta orientarse durante un evento: encontrar tu puerta y tu asiento, ubicar los puntos de interés y resolver dudas sobre la marcha.
+
+CrowdCompass convierte la entrada en una guía:
+
+1. El usuario escanea el QR de su entrada con la cámara o escribe el código.
+2. El backend valida el ticket.
+3. Se carga el recinto en 3D con su asiento.
+4. Un recorrido guiado le lleva hasta su localidad, con vista en primera persona.
+5. Por el camino puede consultar puntos de interés y preguntar a un asistente.
 
 ## Qué hice
 
-TODO. Web de gestión de eventos con modelo 3D interactivo y chatbot, desplegada con Apache y SSH. Desarrollada con metodología ABP.
+CrowdCompass es un proyecto en equipo (equipo KBH) desarrollado con Aprendizaje Basado en Proyectos en 4.º de Ingeniería Multimedia.
+
+TODO: mi parte en el proyecto, pendiente de confirmar.
 
 ## Decisiones técnicas
 
-TODO
+- **Motor 3D propio en WebGL.** Grafo de escena con nodos, entidades, cámara, luces y mallas; renderer propio y un gestor de recursos que traduce los modelos GLB a mallas, materiales, texturas y shaders.
+- **Dos motores, una interfaz.** Una capa común (`GraphicsFacadeService`) permite cambiar entre el motor propio y Three.js sin tocar la página Angular.
+- **Carga diferida.** El motor 3D, el lector QR (jsQR sobre la cámara) y el chatbot solo se cargan cuando hacen falta.
+- **Chatbot con contexto.** Usa Dialogflow y sabe en qué página está el usuario y el estado de su ticket; puede mostrar el QR de la entrada. El backend tiene un webhook propio para Dialogflow.
+- **Tres áreas con acceso controlado.** Pública (landing, tutorial, datos abiertos y legales), privada (perfil, mis eventos y tickets) y de administración (CRUD y métricas de escaneos y de interacción con el 3D). Los guards de Angular filtran por sesión, ticket o rol.
+- **Datos abiertos.** Exportación en CSV, JSON y PDF; los PDF se generan en el cliente sin librerías externas.
+- **API REST.** Node.js con Express 5 y Sequelize sobre MySQL 8, JWT y login con Google, subida de modelos 3D con Multer y generación de QR.
 
 ## Resultado
 
-En producción en crowdcompass.ovh.
+- En producción en crowdcompass.ovh, en un servidor propio con Apache y despliegue por SSH.
+- Entorno de desarrollo con Docker Compose: MySQL, phpMyAdmin, backend y frontend.
+- La landing integra un objeto de aprendizaje eXeLearning.
