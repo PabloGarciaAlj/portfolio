@@ -72,13 +72,24 @@
  * the visitors who most need the soft change. ClientRouter's stylesheet sets
  * `animation: none !important` on every view-transition pseudo-element under
  * prefers-reduced-motion, so old/new carry their own fade with !important (and
- * higher specificity) to win. It also replaces Astro's delayed fades on named
- * elements (project titles), which would otherwise dip out of step with the page.
+ * higher specificity) to win.
  * Groups never move here (same layout in both themes), so they are left alone.
  * Overriding `animation` also drops the browser's own plus-lighter blend
  * (applied as an animation), so it is set here: without it the two snapshots
  * multiply their opacity and the page dims mid-fade.
  */
+
+/*
+ * Named elements (transition:name on project titles, for the card → detail
+ * morph) are lifted into the view-transition layer, above the whole page
+ * snapshot, so mid-fade they would paint over the sticky header. A theme change
+ * has nothing to morph, so they drop their names and fade as part of the page.
+ * Astro sets the name with [data-astro-transition-scope]; this is more specific.
+ * The theme switch keeps its own name on purpose: it lives in the header.
+ */
+:root.theme-transition [data-astro-transition-scope] {
+  view-transition-name: none;
+}
 @keyframes theme-fade-out {
   to {
     opacity: 0;
