@@ -98,6 +98,21 @@ Next. Equivalencias:
 Cualquier componente con Motion, listeners de scroll o física de puntero es una isla React
 pequeña y aislada. El layout nunca se hidrata entero.
 
+### Servidores MCP de Claude Code
+
+Instalados el 2026-10-03. Úsalos en lugar de recordar APIs o estimar métricas:
+
+| Servidor | Ámbito | Para qué |
+| --- | --- | --- |
+| `astro-docs` (`https://mcp.docs.astro.build/mcp`) | Local (solo Pablo, en `~/.claude.json`) | Documentación oficial y al día de Astro. **Consúltalo antes de usar cualquier API de Astro** (Content Collections, `astro:assets`, fuentes, `ClientRouter` y sus eventos, integraciones). |
+| `chrome-devtools` (`chrome-devtools-mcp`) | Proyecto (`.mcp.json`, en el repo) | Auditorías de Lighthouse, trazas de rendimiento (Core Web Vitals), consola y red sobre la build o el servidor de desarrollo. Es la forma de comprobar el criterio de Lighthouse de la sección 11. |
+
+- En Windows, `chrome-devtools` se lanza con `cmd /c npx …`: `npx` no arranca directamente
+  como servidor stdio.
+- Los nombres de servidor no admiten espacios (`astro-docs`, no `"Astro docs"`).
+- Si `claude` no está en el PATH, el CLI que trae la app de escritorio está en
+  `%APPDATA%\Claude\claude-code\<versión>\…\claude.exe`.
+
 ---
 
 ## 4. Estructura del repositorio
@@ -105,6 +120,7 @@ pequeña y aislada. El layout nunca se hidrata entero.
 ```text
 /
 ├── CLAUDE.md
+├── .mcp.json                             # servidores MCP del proyecto (chrome-devtools)
 ├── astro.config.mjs
 ├── public/
 │   ├── cv/CV_Pablo_Garcia_Aljibe.pdf     # CV descargable (lo exporta Pablo desde Word)
@@ -292,7 +308,7 @@ Frases cortas, concretas y en primera persona cuando hable Pablo ("Desarrollo AP
 
 ### 8.1 Skills instaladas
 
-Pablo tiene tres paquetes de skills de diseño. Úsalos activamente: son la referencia de
+Pablo tiene cuatro paquetes de skills de diseño. Úsalos activamente: son la referencia de
 calidad visual de este proyecto.
 
 | Paquete | Origen | Skills relevantes | Para qué |
@@ -300,16 +316,25 @@ calidad visual de este proyecto.
 | **taste-skill** | `Leonxlnx/taste-skill` | `design-taste-frontend` (principal), `high-end-visual-design`, `minimalist-ui`, `redesign-existing-projects` | Dirección estética, tipografía, layout, color y anti-patrones de "web hecha por IA". |
 | **emilkowalski** | `emilkowalski/skill` | `emil-design-eng`, `animate`, `review-animations`, `improve-animations`, `find-animation-opportunities`, `animation-vocabulary`, `pick-ui-library` | Criterio de animación e interacción: qué animar, con qué easing y duración, y cómo revisarlo. |
 | **impeccable** | ya instalada en `~/.claude/skills/impeccable` | auditoría y pulido | Revisión de calidad de la UI tras cada cambio (tiene hooks configurados). |
+| **vercel** | `vercel-labs/agent-skills` | solo `web-design-guidelines` | Revisión de código de UI contra las Web Interface Guidelines de Vercel (accesibilidad, foco, formularios, interacción). Descarga las reglas al día en cada revisión. No opina sobre estética, así que no choca con taste-skill. |
 
 **Instalación** (si Claude Code no las ve en este repo). Las de taste-skill y emilkowalski
 están en `Documents/CLAUDE SKILLS/*/.agents/skills/`. Para que Claude Code las cargue deben
 estar en `~/.claude/skills/` (globales) o en `.claude/skills/` de este repo. Copia ahí las
 carpetas de cada skill (cada una con su `SKILL.md`) o reinstálalas con el CLI de skills
-apuntando a Claude Code.
+apuntando a Claude Code. La de Vercel se instaló con el CLI, copiada (sin symlinks) y solo
+esa skill; el CLI deja un `skills-lock.json` en la raíz:
+
+```bash
+npx skills add vercel-labs/agent-skills --skill web-design-guidelines --agent claude-code --copy --yes
+```
 
 **No uses (no aplican aquí):** `animate-expo`, `mobile-native`, `write-swift`,
 `imagegen-frontend-mobile`, `industrial-brutalist-ui` (salvo que Pablo elija esa estética),
-`ask-sonner` (no hay toasts), `design-taste-frontend-v1` (versión antigua).
+`ask-sonner` (no hay toasts), `design-taste-frontend-v1` (versión antigua). Del repo de
+Vercel, ninguna otra: son para Next.js (`react-best-practices`, `react-view-transitions`),
+React Native o despliegues con token. Tampoco `frontend-design` de Anthropic ni otros
+paquetes de estética genéricos: se solapan con `design-taste-frontend` y sus reglas chocan.
 
 ### 8.2 Cómo combinarlas
 
@@ -318,8 +343,9 @@ apuntando a Claude Code.
    reglas se contradicen entre sí (por ejemplo, sombras o iconos).
 2. **Movimiento:** `emil-design-eng` y `animate` deciden *si* algo se anima y *cómo*. Si
    chocan con `design-taste-frontend` en algo de animación, gana Emil.
-3. **Revisión:** al terminar cada sección, pasa `review-animations` (si hay movimiento) e
-   `impeccable`, y corrige antes de seguir.
+3. **Revisión:** al terminar cada sección, pasa `review-animations` (si hay movimiento),
+   `impeccable` y `web-design-guidelines` sobre los archivos tocados, y corrige antes de
+   seguir. Comprueba siempre los dos temas, claro y oscuro.
 4. **Librerías:** si hace falta algo nuevo (contador animado, resaltado de código…),
    consulta `pick-ui-library` y pregunta a Pablo antes de añadir la dependencia.
 
@@ -332,7 +358,24 @@ Por decidir con Pablo (regla 4). Restricciones que ya están claras:
 - **Nada genérico:** debe notarse que hay criterio de diseño detrás.
 - **El 3D es un recurso de identidad**, no decoración: aparece donde aporta (TFG y, si
   Pablo quiere, un guiño en el hero) y nunca bloquea la carga.
-- **Modo claro y oscuro**, respetando `prefers-color-scheme`.
+- **Modo claro y oscuro** (decidido con Pablo el 2026-10-03):
+  - Por defecto sigue `prefers-color-scheme`. Un switch en el header, a la derecha
+    (`ThemeToggle.astro`), permite elegir; la elección se guarda en `localStorage` y pone
+    `<html data-theme="light|dark">`. Sin JS el switch se oculta y manda el sistema.
+  - El script del tema va inline en el `<head>` de `BaseLayout.astro` para que no haya
+    destello del tema equivocado, y pasa el tema a la página nueva en `astro:before-swap`
+    (el `ClientRouter` sustituye los atributos de `<html>`).
+  - **Modo claro en tonos de papel cálido, nunca blanco puro** (fondo `#f1ece3`), para no
+    cansar la vista. Texto en casi negro cálido. Todos los tokens de texto cumplen AA
+    (≥ 4,5:1) sobre `canvas`, `surface` y `sunken` en los dos temas: si se cambia un
+    color, se vuelve a medir.
+  - **Cambio de tema con fundido cruzado de 450 ms** (`document.startViewTransition`),
+    por fotosensibilidad: nunca un salto de luminancia de golpe. No usar transiciones CSS
+    de color en todos los elementos: con la herencia se desincronizan y el texto queda
+    medio fundido. Al ser un fundido y no un movimiento, se mantiene con movimiento
+    reducido (la bolita del switch, en cambio, no se desliza).
+  - Las imágenes deben verse bien sobre los dos fondos (ver la portada del TFG, pendiente
+    de exportar con fondo transparente).
 
 ### 8.4 Anti-patrones (no hacer)
 
@@ -430,10 +473,12 @@ procesa con `gltf-transform` desde un script aparte, sin añadirlo al proyecto:
 ## 11. Criterios de calidad (definición de "hecho")
 
 - **Lighthouse ≥ 95** en Rendimiento, Accesibilidad, Buenas prácticas y SEO (móvil).
+  Se mide con `lighthouse_audit` del MCP `chrome-devtools` sobre `npm run build && npm run
+  preview`, no sobre el servidor de desarrollo.
 - **Responsive:** de 360 px a pantallas anchas, sin scroll horizontal. Comprobar en móvil
   de verdad o en el emulador.
-- **Accesibilidad:** HTML semántico, un solo `h1` por página, foco visible, contraste AA,
-  navegación completa por teclado y `alt` en todas las imágenes.
+- **Accesibilidad:** HTML semántico, un solo `h1` por página, foco visible, contraste AA
+  **en los dos temas**, navegación completa por teclado y `alt` en todas las imágenes.
 - **SEO:** `<title>` y `description` por página, Open Graph con imagen, `sitemap`
   (`@astrojs/sitemap`), `robots.txt` y `lang="es"`.
 - **Sin JS innecesario:** la landing debe funcionar y verse bien con JS desactivado,

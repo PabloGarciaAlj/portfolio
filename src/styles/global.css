@@ -119,6 +119,7 @@
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 @layer base {
@@ -202,62 +203,6 @@
     .link:hover {
       text-decoration-color: var(--accent);
     }
-  }
-
-  /*
-   * Theme switch (ThemeToggle.astro). Its state is read from <html data-theme>
-   * so it is right on first paint. The thumb slides and the icon swaps to
-   * confirm the change; press feedback on the track like every button.
-   * The track outline is the control's boundary, so it needs >= 3:1 against
-   * the canvas (WCAG 1.4.11): ~3.6:1 light, ~4.4:1 dark. --line-strong is ~2:1.
-   */
-  .theme-switch-track {
-    border-color: color-mix(in srgb, var(--muted) 75%, var(--canvas));
-    transition:
-      border-color 200ms ease,
-      scale 160ms var(--ease-out-strong);
-  }
-  .theme-switch:active .theme-switch-track {
-    scale: 0.94;
-  }
-  @media (hover: hover) {
-    .theme-switch:hover .theme-switch-track {
-      border-color: var(--ink);
-    }
-  }
-  .theme-switch-thumb {
-    transition: translate 240ms var(--ease-out-strong);
-  }
-  :root[data-theme='dark'] .theme-switch-thumb {
-    translate: 20px 0;
-  }
-  .theme-switch-sun,
-  .theme-switch-moon {
-    transition:
-      opacity 200ms ease-out,
-      scale 200ms var(--ease-out-strong);
-  }
-  :root[data-theme='dark'] .theme-switch-sun,
-  :root:not([data-theme='dark']) .theme-switch-moon {
-    opacity: 0;
-    scale: 0.6;
-  }
-}
-
-/* Without JS the switch could not work, so it is not shown. */
-:root:not([data-theme]) .theme-switch {
-  display: none;
-}
-
-/* Reduced motion: the thumb jumps and the icons only fade. */
-@media (prefers-reduced-motion: reduce) {
-  .theme-switch-thumb {
-    transition: none;
-  }
-  .theme-switch-sun,
-  .theme-switch-moon {
-    scale: 1 !important;
-    transition: opacity 200ms ease-out;
   }
 }
 

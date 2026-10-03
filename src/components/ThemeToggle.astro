@@ -1,8 +1,20 @@
 ---
-// Light/dark switch. State and persistence live in ThemeScript (inline in
-// <head>); this is only the control. Its look follows <html data-theme>, so the
-// thumb is already in place on first paint, before aria-checked is synced.
-import { MoonIcon, SunIcon } from '@phosphor-icons/react/ssr';
+// Light/dark switch. State and persistence live in the theme script (inline in
+// BaseLayout's <head>); this is only the control. Its look follows
+// <html data-theme>, so it is already right on first paint, before aria-checked
+// is synced.
+//
+// The thumb carries one SVG that morphs between a vermilion sun and a crescent
+// moon: a masked circle grows and a second circle in the mask slides over it
+// (technique from Adam Argyle, web.dev "Building a theme switch component").
+// Its 8 rays are generated around the centre.
+const rays = Array.from({ length: 8 }, (_, i) => {
+  const a = (i * Math.PI) / 4;
+  const at = (r: number) => [12 + r * Math.cos(a), 12 + r * Math.sin(a)].map((n) => +n.toFixed(2));
+  const [x1, y1] = at(7);
+  const [x2, y2] = at(10);
+  return { x1, y1, x2, y2 };
+});
 ---
 
 <button
@@ -11,20 +23,240 @@ import { MoonIcon, SunIcon } from '@phosphor-icons/react/ssr';
   aria-checked="false"
   aria-label="Modo oscuro"
   data-theme-toggle
-  class="theme-switch -my-2.5 grid size-11 shrink-0 place-items-center rounded-lg"
+  class="theme-switch -my-2.5 grid h-11 w-14 shrink-0 place-items-center"
 >
-  <span class="theme-switch-track relative block h-6 w-11 rounded-full border bg-sunken">
-    <span
-      class="theme-switch-thumb absolute top-[2px] left-[2px] grid size-[18px] place-items-center rounded-full bg-ink text-canvas"
-      aria-hidden="true"
-    >
-      {/* Icon shows the active theme, so the state never depends on position alone. */}
-      <span class="theme-switch-sun col-start-1 row-start-1 grid">
-        <SunIcon size={12} weight="bold" />
-      </span>
-      <span class="theme-switch-moon col-start-1 row-start-1 grid">
-        <MoonIcon size={12} weight="bold" />
-      </span>
+  <span class="track" aria-hidden="true">
+    <span class="star" style="--x: 9px; --y: 7px; --s: 2px; --d: 0ms"></span>
+    <span class="star" style="--x: 16px; --y: 15px; --s: 1.5px; --d: 50ms"></span>
+    <span class="star" style="--x: 6px; --y: 17px; --s: 1px; --d: 100ms"></span>
+    <span class="thumb">
+      <svg class="icon" viewBox="0 0 24 24" focusable="false">
+        <mask id="theme-switch-moon">
+          <rect width="24" height="24" fill="white"></rect>
+          <circle class="cutout" cx="17" cy="7" r="8" fill="black"></circle>
+        </mask>
+        <circle class="core" cx="12" cy="12" r="8.5" fill="currentColor" mask="url(#theme-switch-moon)"
+        ></circle>
+        <g class="rays" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          {rays.map((ray) => <line {...ray} />)}
+        </g>
+      </svg>
     </span>
   </span>
 </button>
+
+<style>
+  /*
+   * Motion budget: the switch is pressed a few times per visit, so it gets a
+   * standard animation whose job is state indication. Everything finishes
+   * inside the 450ms page cross-fade (global.css) and runs on transform/opacity.
+   * Timings sit on the destination state, so each direction has its own:
+   * to dark, the rays leave fast and the moon closes in; to light, the shadow
+   * slides away and the rays come back after it.
+   */
+  .theme-switch {
+    --switch-travel: 24px;
+    --switch-thumb: var(--surface);
+    --switch-icon: var(--accent);
+    --switch-ring: var(--line);
+    --switch-fade: 450ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :global(:root[data-theme='dark']) .theme-switch {
+    --switch-thumb: color-mix(in srgb, var(--ink) 14%, var(--canvas));
+    --switch-icon: var(--ink);
+    --switch-ring: var(--line-strong);
+  }
+
+  /* Without JS the switch could not work, so it is not shown. */
+  :global(:root:not([data-theme])) .theme-switch {
+    display: none;
+  }
+
+  /*
+   * 52x28 pill. The outline is the control's boundary, so it keeps >= 3:1
+   * against the canvas (WCAG 1.4.11): ~3.6:1 light, ~4.4:1 dark.
+   * It has its own view-transition name so the page cross-fade does not
+   * ghost it: the live switch animates on top while the page fades below.
+   */
+  .track {
+    position: relative;
+    display: block;
+    width: 3.25rem;
+    height: 1.75rem;
+    border: 1px solid color-mix(in srgb, var(--muted) 75%, var(--canvas));
+    border-radius: 999px;
+    background-color: var(--sunken);
+    view-transition-name: theme-switch;
+    transition:
+      background-color var(--switch-fade),
+      border-color var(--switch-fade);
+  }
+
+  /* Focus ring on the pill, not on the larger hit area around it. */
+  .theme-switch:focus-visible {
+    outline: none;
+  }
+  .theme-switch:focus-visible .track {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  /*
+   * Thumb: 22px, slides with a strong ease-in-out (on-screen movement).
+   * Its fill is a pseudo-element so the press can stretch it (iOS-style, toward
+   * where it will go) with a transform, without distorting the icon.
+   */
+  .thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    color: var(--switch-icon);
+    /* Short colour change: vermilion to cream would pass through pink. */
+    transition:
+      translate 280ms var(--ease-in-out-strong),
+      color 180ms ease-out;
+  }
+  :global(:root[data-theme='dark']) .thumb {
+    translate: var(--switch-travel) 0;
+  }
+  .thumb::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background-color: var(--switch-thumb);
+    box-shadow:
+      0 0 0 1px var(--switch-ring),
+      0 1px 2px rgb(0 0 0 / 0.14);
+    transform-origin: left center;
+    transition:
+      scale 160ms var(--ease-out-strong),
+      background-color var(--switch-fade),
+      box-shadow var(--switch-fade);
+  }
+  :global(:root[data-theme='dark']) .thumb::before {
+    transform-origin: right center;
+  }
+  .theme-switch:active .thumb::before {
+    scale: 1.18 1;
+  }
+
+  .icon {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    overflow: visible;
+    transition: rotate 200ms ease;
+  }
+  .core,
+  .rays {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  /* Light (default): small sun, shadow parked outside, rays out. */
+  .core {
+    transform: scale(0.55);
+    transition: transform 250ms var(--ease-out-strong);
+  }
+  .cutout {
+    transform: translate(9px, -9px);
+    transition: transform 200ms var(--ease-out-strong);
+  }
+  .rays {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 200ms ease-out 120ms,
+      transform 300ms var(--ease-out-strong) 120ms;
+  }
+
+  /* Dark: the disc grows and the shadow slides over it into a crescent. */
+  :global(:root[data-theme='dark']) .core {
+    transform: none;
+    transition: transform 300ms var(--ease-out-strong);
+  }
+  :global(:root[data-theme='dark']) .cutout {
+    transform: none;
+    transition: transform 320ms var(--ease-in-out-strong) 60ms;
+  }
+  :global(:root[data-theme='dark']) .rays {
+    opacity: 0;
+    transform: rotate(-30deg) scale(0.6);
+    transition:
+      opacity 150ms ease-out,
+      transform 150ms ease-out;
+  }
+
+  /* Night: three faint stars on the empty side, after the thumb has left. */
+  .star {
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    width: var(--s);
+    height: var(--s);
+    border-radius: 999px;
+    background-color: var(--muted);
+    opacity: 0;
+    scale: 0.5;
+    transition:
+      opacity 120ms ease-out,
+      scale 120ms ease-out;
+  }
+  :global(:root[data-theme='dark']) .star {
+    opacity: 1;
+    scale: 1;
+    transition:
+      opacity 250ms ease-out calc(180ms + var(--d)),
+      scale 250ms var(--ease-out-strong) calc(180ms + var(--d));
+  }
+
+  /* Hover cue: the sun turns a little, the moon tilts. Pointer devices only. */
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .theme-switch:hover .icon {
+      rotate: 22.5deg;
+    }
+    :global(:root[data-theme='dark']) .theme-switch:hover .icon {
+      rotate: -12deg;
+    }
+  }
+
+  /*
+   * While the page cross-fades, show only the live switch (its own transitions
+   * do the work) instead of a fading snapshot of the old one. These beat the
+   * generic theme-fade rules in global.css on order.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    :global(:root.theme-transition::view-transition-old(theme-switch)) {
+      animation: none !important;
+      opacity: 0;
+    }
+    :global(:root.theme-transition::view-transition-new(theme-switch)) {
+      animation: none !important;
+    }
+  }
+
+  /*
+   * Reduced motion: nothing slides, turns or grows. The switch swaps state at
+   * once and, like the rest of the page, cross-fades between the two themes.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .thumb,
+    .thumb::before,
+    .icon,
+    .core,
+    .cutout,
+    .rays,
+    .star {
+      transition: none !important;
+    }
+    .theme-switch:active .thumb::before {
+      scale: none;
+    }
+  }
+</style>
