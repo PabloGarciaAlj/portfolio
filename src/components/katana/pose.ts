@@ -88,10 +88,12 @@ const REST_ROLL = 0.3;
  */
 export function poseAt(t: number, layout: Layout): Pose {
   const { card, compact, container } = layout;
-  // Both eased over a long stretch of scroll (from the card entering until it
-  // is past the middle of the screen): slow, no step, no sudden start or stop.
-  const grow = ease(0, 0.66, t);
-  const spin = ease(0.02, 0.64, t);
+  // Both eased over most of the time the katana is on screen: from the card
+  // entering at the bottom until it is half under the header (t ≈ 0.8), so it
+  // keeps moving while it rises and settles just before it leaves. Slow, no
+  // step, no sudden start or stop.
+  const grow = ease(0, 0.82, t);
+  const spin = ease(0.02, 0.8, t);
 
   const start = card.width * (compact ? 1.9 : 1.35);
   const end = compact ? container * 3.36 : Math.min(container * 2.3, 3120);
