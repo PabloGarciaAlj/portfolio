@@ -48,22 +48,22 @@ export interface Pose {
  * fractions of its size), how wide it is for a given katana length, and its
  * aspect ratio. Used to place it like the 3D pose. Re-measure when re-rendered.
  */
-export const POSTER = { habakiX: 0.2401, habakiY: 0.7789, widthPerLength: 1.0573, aspect: 3313 / 403 };
+export const POSTER = { habakiX: 0.2353, habakiY: 0.7974, widthPerLength: 1.065, aspect: 3337 / 440 };
 
 /** Typical layouts the poster is placed for, before any JS runs. */
 export const NOMINAL_LAYOUTS: Record<'wide' | 'compact', Layout> = {
   wide: {
     width: 1440,
-    height: 317 + 100 + 110,
+    height: 288 + 100 + 110,
     container: 1088,
-    card: { x: 0, y: -5, width: 736, height: 317 },
+    card: { x: 0, y: -5, width: 736, height: 288 },
     compact: false,
   },
   compact: {
     width: 390,
-    height: 548 + 120 + 96,
+    height: 442 + 120 + 96,
     container: 358,
-    card: { x: 0, y: 0, width: 358, height: 548 },
+    card: { x: 0, y: -12, width: 358, height: 442 },
     compact: true,
   },
 };
@@ -78,25 +78,29 @@ const REST_ROLL = 0.3;
  * Scroll progress `t`: 0 when the card enters from the bottom, 1 when it leaves
  * at the top (0.5 = card centred on screen).
  *
- * The katana lies diagonally behind the card. It starts small, its two ends
- * just showing past the card's sides, and comes closer as the card rises:
- * it grows to about twice the section's width while it makes one full, smooth
- * turn on its own axis, so the light runs across the steel and the guard spins.
- * It ends with the guard in the left margin and the blade crossing behind the
- * card to the right edge, and holds there while the card leaves.
+ * The katana lies behind the card, almost level on wide screens (the blade's
+ * own curve gives it its slight rise) and upright on phones. It starts small,
+ * its two ends just showing past the card's sides, and comes closer slowly as
+ * the card rises: it grows to about twice the section's width while it makes
+ * one full, smooth turn on its own axis, so the light runs across the steel and
+ * the guard spins. It ends with the guard in the left margin and the blade
+ * crossing behind the card to the right edge, and holds there while it leaves.
  */
 export function poseAt(t: number, layout: Layout): Pose {
   const { card, compact, container } = layout;
-  // Both eased over the same stretch of scroll: no step, no sudden start or stop.
-  const grow = ease(0.02, 0.52, t);
-  const spin = ease(0.04, 0.5, t);
+  // Both eased over a long stretch of scroll (from the card entering until it
+  // is past the middle of the screen): slow, no step, no sudden start or stop.
+  const grow = ease(0, 0.66, t);
+  const spin = ease(0.02, 0.64, t);
 
   const start = card.width * (compact ? 1.9 : 1.35);
   const end = compact ? container * 2.8 : Math.min(container * 1.92, 2600);
   const length = start + (end - start) * grow;
 
-  // Steep on phones, where only the space above and below the card is free.
-  const tilt = compact ? 1.12 : 0.22;
+  // Upright on phones, where only the space above and below the card is free.
+  // On wide screens nearly level: the blade's curve already lifts the tip about
+  // 6° over the handle, so the steel never runs out of the band at the top.
+  const tilt = compact ? 1.12 : 0.04;
   // Turned away at first, facing the viewer more as it comes closer.
   const yaw = -0.55 + 0.25 * grow;
 
@@ -107,7 +111,8 @@ export function poseAt(t: number, layout: Layout): Pose {
 
   return {
     x: card.x - along * Math.cos(tilt),
-    y: card.y - along * Math.sin(tilt),
+    // A little below the centre, so the rising blade sits mid-band on the right.
+    y: card.y - along * Math.sin(tilt) - (compact ? 0 : card.height * 0.14),
     z: 0,
     length,
     tilt,
