@@ -148,7 +148,12 @@ Navegación: enlaces ancla a las secciones. Debe funcionar perfectamente sin JS.
 
 ### 5.2 Detalle de proyecto (`/proyectos/[slug]`)
 
-Plantilla común para todos los proyectos:
+**Excepción (decidido con Pablo el 2026-10-03):** los proyectos con `confidential: true`
+(prácticas en 1MillionBot) **no tienen página de detalle**. En la landing aparecen como
+una lista compacta, sin tarjetas ni enlaces: título, resumen y las 5 primeras tecnologías.
+Su MDX se conserva como fuente de datos. Lo controla `hasDetailPage` en `src/lib/projects.ts`.
+
+Plantilla común para los demás proyectos:
 
 - Cabecera: título, resumen de una línea, año, contexto (prácticas / académico / TFG),
   rol de Pablo y tecnologías.

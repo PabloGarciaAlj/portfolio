@@ -9,9 +9,6 @@ const thesis = featured.filter((p) => p.data.context === 'tfg');
 const internship = featured.filter((p) => p.data.context === 'prácticas');
 const academic = featured.filter((p) => p.data.context === 'académico');
 const others = projects.filter((p) => !p.data.featured);
-
-// Asymmetric rhythm for the internship grid: 7/5, then 5/7.
-const internshipSpans = ['md:col-span-7', 'md:col-span-5', 'md:col-span-5', 'md:col-span-7'];
 ---
 
 <section
@@ -40,19 +37,26 @@ const internshipSpans = ['md:col-span-7', 'md:col-span-5', 'md:col-span-5', 'md:
             Prácticas en 1MillionBot
           </h3>
           <p class="mt-2 leading-relaxed text-muted">
-            Proyectos para clientes de la empresa. Los describo sin nombres ni capturas por
-            confidencialidad.
+            Proyectos para clientes de la empresa, descritos sin nombres ni capturas.
           </p>
         </div>
-        <div class="mt-6 grid gap-4 md:grid-cols-12">
-          {internship.map((project, i) => (
-            <ProjectCard
-              project={project}
-              headingLevel="h4"
-              class={internshipSpans[i % internshipSpans.length]}
-            />
+        {/* Client work has no images or detail page: a compact list, not cards. */}
+        <ul class="mt-6 divide-y divide-line border-t border-line">
+          {internship.map((project) => (
+            <li class="grid gap-2 py-5 md:grid-cols-12 md:gap-10">
+              <h4 class="font-semibold leading-snug text-balance md:col-span-5">
+                {project.data.title}
+              </h4>
+              <div class="md:col-span-7">
+                <p class="leading-relaxed text-pretty text-muted">{project.data.summary}</p>
+                <p class="mt-2 font-mono text-xs text-muted">
+                  <span class="sr-only">Tecnologías: </span>
+                  {project.data.stack.slice(0, 5).join(', ')}
+                </p>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
     )
   }

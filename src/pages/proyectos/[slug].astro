@@ -9,11 +9,11 @@ import SiteHeader from '../../components/SiteHeader.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 import MediaPlaceholder from '../../components/MediaPlaceholder.astro';
 import CharacterViewer from '../../components/CharacterViewer.tsx';
-import { contextLabel, getProjects, type Project } from '../../lib/projects';
+import { contextLabel, getProjects, hasDetailPage, type Project } from '../../lib/projects';
 import { profile } from '../../data/profile';
 
 export async function getStaticPaths() {
-  const projects = await getProjects();
+  const projects = (await getProjects()).filter(hasDetailPage);
   return projects.map((project, i) => ({
     params: { slug: project.id },
     props: {
