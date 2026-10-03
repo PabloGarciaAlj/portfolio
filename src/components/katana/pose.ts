@@ -48,7 +48,7 @@ export interface Pose {
  * fractions of its size), how wide it is for a given katana length, and its
  * aspect ratio. Used to place it like the 3D pose. Re-measure when re-rendered.
  */
-export const POSTER = { habakiX: 0.2353, habakiY: 0.7974, widthPerLength: 1.065, aspect: 3337 / 440 };
+export const POSTER = { habakiX: 0.217, habakiY: 0.8114, widthPerLength: 1.1245, aspect: 4221 / 565 };
 
 /** Typical layouts the poster is placed for, before any JS runs. */
 export const NOMINAL_LAYOUTS: Record<'wide' | 'compact', Layout> = {
@@ -81,7 +81,7 @@ const REST_ROLL = 0.3;
  * The katana lies behind the card, almost level on wide screens (the blade's
  * own curve gives it its slight rise) and upright on phones. It starts small,
  * its two ends just showing past the card's sides, and comes closer slowly as
- * the card rises: it grows to about twice the section's width while it makes
+ * the card rises: it grows to about 2.3 times the section's width while it makes
  * one full, smooth turn on its own axis, so the light runs across the steel and
  * the guard spins. It ends with the guard in the left margin and the blade
  * crossing behind the card to the right edge, and holds there while it leaves.
@@ -94,7 +94,7 @@ export function poseAt(t: number, layout: Layout): Pose {
   const spin = ease(0.02, 0.64, t);
 
   const start = card.width * (compact ? 1.9 : 1.35);
-  const end = compact ? container * 2.8 : Math.min(container * 1.92, 2600);
+  const end = compact ? container * 3.36 : Math.min(container * 2.3, 3120);
   const length = start + (end - start) * grow;
 
   // Upright on phones, where only the space above and below the card is free.
@@ -106,7 +106,7 @@ export function poseAt(t: number, layout: Layout): Pose {
 
   // The point of the katana kept over the card's centre: its middle at first,
   // then a little towards the tip, so the guard ends up beside the card.
-  const focus = 0.5 + (compact ? 0.06 : 0.08) * grow;
+  const focus = 0.5 + (compact ? 0.06 : 0.055) * grow;
   const along = (focus - HABAKI_ALONG) * length * Math.cos(yaw);
 
   return {
