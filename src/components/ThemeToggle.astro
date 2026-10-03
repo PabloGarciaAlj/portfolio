@@ -1,0 +1,30 @@
+---
+// Light/dark switch. State and persistence live in ThemeScript (inline in
+// <head>); this is only the control. Its look follows <html data-theme>, so the
+// thumb is already in place on first paint, before aria-checked is synced.
+import { MoonIcon, SunIcon } from '@phosphor-icons/react/ssr';
+---
+
+<button
+  type="button"
+  role="switch"
+  aria-checked="false"
+  aria-label="Modo oscuro"
+  data-theme-toggle
+  class="theme-switch -my-2.5 grid size-11 shrink-0 place-items-center rounded-lg"
+>
+  <span class="theme-switch-track relative block h-6 w-11 rounded-full border bg-sunken">
+    <span
+      class="theme-switch-thumb absolute top-[2px] left-[2px] grid size-[18px] place-items-center rounded-full bg-ink text-canvas"
+      aria-hidden="true"
+    >
+      {/* Icon shows the active theme, so the state never depends on position alone. */}
+      <span class="theme-switch-sun col-start-1 row-start-1 grid">
+        <SunIcon size={12} weight="bold" />
+      </span>
+      <span class="theme-switch-moon col-start-1 row-start-1 grid">
+        <MoonIcon size={12} weight="bold" />
+      </span>
+    </span>
+  </span>
+</button>

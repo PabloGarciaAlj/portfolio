@@ -2,27 +2,36 @@
 
 /*
  * Design tokens. One neutral palette + one accent (vermilion, a nod to the
- * Japanese art direction of the TFG). Light/dark follow prefers-color-scheme.
+ * Japanese art direction of the TFG).
+ *
+ * Theme: follows prefers-color-scheme until the visitor picks one with the
+ * header switch, which sets <html data-theme="light|dark"> (see ThemeScript).
+ * Without JS only the media query applies.
+ *
+ * Light is warm paper, never pure white, so it is easy on the eyes. Every text
+ * token keeps >= 4.5:1 (WCAG AA) on canvas, surface and sunken in both themes.
  *
  * Radius system: interactive elements (buttons, tags) 8px, containers
  * (cards, media) 12px.
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
-  --canvas: #f5f5f3;
-  --surface: #fbfbfa;
-  --sunken: #ececea;
-  --ink: #151514;
-  --muted: #5f5f5b;
-  --line: rgb(21 21 20 / 0.1);
-  --line-strong: rgb(21 21 20 / 0.24);
-  --accent: #c73e1d;
-  --accent-ink: #ffffff;
+  --canvas: #f1ece3;
+  --surface: #f7f3ec;
+  --sunken: #e7e0d3;
+  --ink: #1f1b16;
+  --muted: #5d5549;
+  --line: rgb(31 27 22 / 0.12);
+  --line-strong: rgb(31 27 22 / 0.3);
+  --accent: #b0371a;
+  --accent-ink: #fbf8f3;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
     --canvas: #0f0f0e;
     --surface: #171716;
     --sunken: #1d1d1c;
@@ -33,6 +42,66 @@
     --accent: #f06a45;
     --accent-ink: #0f0f0e;
   }
+}
+
+/* Same values as the block above, for an explicit choice against the system. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --canvas: #0f0f0e;
+  --surface: #171716;
+  --sunken: #1d1d1c;
+  --ink: #ededea;
+  --muted: #9c9c96;
+  --line: rgb(237 237 234 / 0.1);
+  --line-strong: rgb(237 237 234 / 0.26);
+  --accent: #f06a45;
+  --accent-ink: #0f0f0e;
+}
+
+/*
+ * Theme change: the whole page cross-fades between the two themes (a
+ * same-document view transition started by the theme script), so a full-screen
+ * jump in luminance never hits the eye in one frame (photosensitivity). A
+ * snapshot cross-fade keeps text and background in step; per-element colour
+ * transitions drift apart through inheritance and leave text half-faded.
+ * The class only exists during the switch, so ClientRouter navigations keep
+ * their own animations.
+ *
+ * A fade is not motion, so it must also run under reduced motion: those are
+ * the visitors who most need the soft change. ClientRouter's stylesheet sets
+ * `animation: none !important` on every view-transition pseudo-element under
+ * prefers-reduced-motion, so old/new carry their own fade with !important (and
+ * higher specificity) to win. It also replaces Astro's delayed fades on named
+ * elements (project titles), which would otherwise dip out of step with the page.
+ * Groups never move here (same layout in both themes), so they are left alone.
+ * Overriding `animation` also drops the browser's own plus-lighter blend
+ * (applied as an animation), so it is set here: without it the two snapshots
+ * multiply their opacity and the page dims mid-fade.
+ */
+@keyframes theme-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes theme-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+:root.theme-transition::view-transition-group(*) {
+  animation-duration: 450ms;
+}
+:root.theme-transition::view-transition-image-pair(*) {
+  isolation: isolate;
+}
+:root.theme-transition::view-transition-old(*) {
+  mix-blend-mode: plus-lighter;
+  animation: theme-fade-out 450ms ease-in-out both !important;
+}
+:root.theme-transition::view-transition-new(*) {
+  mix-blend-mode: plus-lighter;
+  animation: theme-fade-in 450ms ease-in-out both !important;
 }
 
 @theme inline {
@@ -133,6 +202,62 @@
     .link:hover {
       text-decoration-color: var(--accent);
     }
+  }
+
+  /*
+   * Theme switch (ThemeToggle.astro). Its state is read from <html data-theme>
+   * so it is right on first paint. The thumb slides and the icon swaps to
+   * confirm the change; press feedback on the track like every button.
+   * The track outline is the control's boundary, so it needs >= 3:1 against
+   * the canvas (WCAG 1.4.11): ~3.6:1 light, ~4.4:1 dark. --line-strong is ~2:1.
+   */
+  .theme-switch-track {
+    border-color: color-mix(in srgb, var(--muted) 75%, var(--canvas));
+    transition:
+      border-color 200ms ease,
+      scale 160ms var(--ease-out-strong);
+  }
+  .theme-switch:active .theme-switch-track {
+    scale: 0.94;
+  }
+  @media (hover: hover) {
+    .theme-switch:hover .theme-switch-track {
+      border-color: var(--ink);
+    }
+  }
+  .theme-switch-thumb {
+    transition: translate 240ms var(--ease-out-strong);
+  }
+  :root[data-theme='dark'] .theme-switch-thumb {
+    translate: 20px 0;
+  }
+  .theme-switch-sun,
+  .theme-switch-moon {
+    transition:
+      opacity 200ms ease-out,
+      scale 200ms var(--ease-out-strong);
+  }
+  :root[data-theme='dark'] .theme-switch-sun,
+  :root:not([data-theme='dark']) .theme-switch-moon {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+/* Without JS the switch could not work, so it is not shown. */
+:root:not([data-theme]) .theme-switch {
+  display: none;
+}
+
+/* Reduced motion: the thumb jumps and the icons only fade. */
+@media (prefers-reduced-motion: reduce) {
+  .theme-switch-thumb {
+    transition: none;
+  }
+  .theme-switch-sun,
+  .theme-switch-moon {
+    scale: 1 !important;
+    transition: opacity 200ms ease-out;
   }
 }
 

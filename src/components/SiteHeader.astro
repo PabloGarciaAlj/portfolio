@@ -1,6 +1,7 @@
 ---
 import { profile } from '../data/profile';
 import Logo from '../assets/logo.svg';
+import ThemeToggle from './ThemeToggle.astro';
 
 const links = [
   { href: '/#proyectos', label: 'Proyectos' },
@@ -26,16 +27,19 @@ const links = [
     >
       <Logo class="block h-8 w-auto" aria-hidden="true" focusable="false" />
     </a>
-    <ul class="flex items-center gap-5 text-[0.9375rem] text-muted sm:gap-7">
-      {
-        links.map((link) => (
-          <li class={link.wide ? 'hidden md:block' : undefined}>
-            <a href={link.href} class="transition-colors duration-200 hover:text-ink">
-              {link.label}
-            </a>
-          </li>
-        ))
-      }
-    </ul>
+    <div class="flex items-center gap-5 sm:gap-7">
+      <ul class="flex items-center gap-5 text-[0.9375rem] text-muted sm:gap-7">
+        {
+          links.map((link) => (
+            <li class={link.wide ? 'hidden md:block' : undefined}>
+              <a href={link.href} class="transition-colors duration-200 hover:text-ink">
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <ThemeToggle />
+    </div>
   </nav>
 </header>

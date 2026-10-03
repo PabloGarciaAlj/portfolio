@@ -9,6 +9,9 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+
+// Browser UI colour per theme: the --canvas of each theme in global.css.
+const themeColors = { light: '#f1ece3', dark: '#0f0f0e' };
 ---
 
 <!doctype html>
@@ -18,8 +21,85 @@ const { title, description } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#f5f5f3" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0f0f0e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content={themeColors.light} media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content={themeColors.dark} media="(prefers-color-scheme: dark)" />
+
+    {/* Theme: runs before first paint so there is no flash of the wrong theme.
+        Inline scripts can run again after a ClientRouter navigation; listeners
+        are added only once. */}
+    <script is:inline define:vars={{ themeColors }}>
+      (() => {
+        const root = document.documentElement;
+        const KEY = 'theme';
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+        const stored = () => {
+          try {
+            const value = localStorage.getItem(KEY);
+            return value === 'light' || value === 'dark' ? value : null;
+          } catch {
+            return null;
+          }
+        };
+        const preferred = () => stored() ?? (systemDark.matches ? 'dark' : 'light');
+
+        // Things outside CSS that depend on the theme: switch state, browser UI colour.
+        const sync = () => {
+          const theme = root.dataset.theme;
+          for (const button of document.querySelectorAll('[data-theme-toggle]')) {
+            button.setAttribute('aria-checked', String(theme === 'dark'));
+          }
+          for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+            meta.setAttribute('content', themeColors[theme]);
+          }
+        };
+
+        // fade: cross-fade the page (see .theme-transition in global.css).
+        // Browsers without view transitions switch at once.
+        const apply = (theme, fade) => {
+          const swap = () => {
+            root.dataset.theme = theme;
+            sync();
+          };
+          if (!fade || !document.startViewTransition) return swap();
+          // A new switch skips the running fade; the class stays until the last ends.
+          fades += 1;
+          root.classList.add('theme-transition');
+          document.startViewTransition(swap).finished.finally(() => {
+            fades -= 1;
+            if (fades === 0) root.classList.remove('theme-transition');
+          });
+        };
+        let fades = 0;
+
+        apply(preferred(), false);
+
+        if (window.__themeReady) return;
+        window.__themeReady = true;
+
+        document.addEventListener('click', (event) => {
+          const target = event.target;
+          if (!(target instanceof Element) || !target.closest('[data-theme-toggle]')) return;
+          const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+          try {
+            localStorage.setItem(KEY, next);
+          } catch {}
+          apply(next, true);
+        });
+
+        // No explicit choice yet: keep following the system.
+        systemDark.addEventListener('change', () => {
+          if (!stored()) apply(preferred(), true);
+        });
+
+        // ClientRouter replaces <html> attributes and <head>: carry the theme over.
+        document.addEventListener('astro:before-swap', (event) => {
+          event.newDocument.documentElement.dataset.theme = root.dataset.theme;
+        });
+        document.addEventListener('astro:after-swap', sync);
+        document.addEventListener('DOMContentLoaded', sync);
+      })();
+    </script>
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
