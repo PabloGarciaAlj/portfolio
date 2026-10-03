@@ -237,25 +237,38 @@
 
 /*
  * Katana behind the TFG card (KatanaBackdrop.tsx). The projects section is the
- * size container, so cqw is the card width; it also becomes the stacking
+ * size container, so cqw is the section width; it also becomes the stacking
  * context that keeps the katana layer under the section's text.
  */
 .katana-section {
   container-type: inline-size;
 }
-/* --katana-band: space kept free between the title and the card for the katana. */
+/*
+ * The band the katana lives in: from just under the section title to a little
+ * below the card (--katana-bleed-top/-bottom past the card's edges). The bottom
+ * margin is at least the bottom bleed, so the next block's text never falls
+ * inside the band (it collapses with that block's own top margin).
+ */
 .katana-backdrop {
-  --katana-bleed: 120px;
-  --katana-band: 4.5rem;
-  margin-top: var(--katana-band);
+  --katana-bleed-top: 120px;
+  --katana-bleed-bottom: 96px;
+  margin-top: 3.5rem;
+  margin-bottom: calc(var(--katana-bleed-bottom) + 0.5rem);
 }
 @media (min-width: 768px) {
   .katana-backdrop {
-    --katana-bleed: 180px;
-    --katana-band: 8.5rem;
+    --katana-bleed-top: 100px;
+    --katana-bleed-bottom: 110px;
+    margin-top: 3rem;
   }
 }
-/* Static render placed like the 3D pose at mid scroll (variables set inline). */
+.katana-layer {
+  top: calc(var(--katana-bleed-top) * -1);
+  bottom: calc(var(--katana-bleed-bottom) * -1);
+  /* Soft top and bottom edges: the katana fades out instead of being cut. */
+  mask-image: linear-gradient(to bottom, transparent, #000 56px, #000 calc(100% - 56px), transparent);
+}
+/* Static render placed like the final 3D pose (variables set inline). */
 .katana-poster {
   --x: var(--poster-x);
   --y: var(--poster-y);
@@ -267,7 +280,7 @@
   width: var(--width);
   height: auto;
   left: calc(50% + var(--x) - var(--width) * var(--poster-habaki-x));
-  top: calc(var(--katana-bleed) + var(--y) - var(--width) / var(--poster-aspect) * var(--poster-habaki-y));
+  top: calc(var(--katana-bleed-top) + var(--y) - var(--width) / var(--poster-aspect) * var(--poster-habaki-y));
   transform-origin: calc(var(--poster-habaki-x) * 100%) calc(var(--poster-habaki-y) * 100%);
   rotate: var(--tilt);
 }
@@ -277,5 +290,18 @@
     --y: var(--poster-y-compact);
     --length: var(--poster-length-compact);
     --tilt: var(--poster-tilt-compact);
+  }
+}
+/*
+ * With JS (the theme script sets data-theme) the 3D scene takes over and the
+ * poster stays hidden, unless the scene cannot run. Without JS, or under
+ * reduced motion (before hydration too), the poster shows.
+ */
+:root[data-theme] .katana-poster[data-fallback='false'] {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .katana-poster {
+    visibility: visible !important;
   }
 }

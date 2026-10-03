@@ -13,9 +13,9 @@ import { useReducedMotion, useScroll, useSpring } from 'motion/react';
 import { NOMINAL_LAYOUTS, POSTER, poseAt, type Layout } from './pose';
 
 /**
- * The poster's place, from the mid-scroll pose on the nominal layouts, in units
- * of the card width (cqw of the projects section, see .katana-poster in
- * global.css). CSS only, so it is right before hydration and without JS.
+ * The poster's place, from the final pose on the nominal layouts, in units of
+ * the section width (cqw of the projects section, see .katana-poster in
+ * global.css). CSS only, so it is right without JS.
  */
 const posterPlacement = Object.fromEntries([
   ['--poster-habaki-x', POSTER.habakiX],
@@ -23,8 +23,8 @@ const posterPlacement = Object.fromEntries([
   ['--poster-width-per-length', POSTER.widthPerLength],
   ['--poster-aspect', POSTER.aspect],
   ...Object.entries(NOMINAL_LAYOUTS).flatMap(([name, layout]) => {
-    const pose = poseAt(0.5, layout);
-    const unit = layout.card.width / 100;
+    const pose = poseAt(1, layout);
+    const unit = layout.container / 100;
     const suffix = name === 'compact' ? '-compact' : '';
     return [
       [`--poster-x${suffix}`, `${(pose.x / unit).toFixed(3)}cqw`],
@@ -36,12 +36,17 @@ const posterPlacement = Object.fromEntries([
   }),
 ]) as CSSProperties;
 
-// three.js and the model only download when the section comes near.
+// three.js and the model download ahead of the section, so the scene is ready
+// (in its starting pose) by the time the card scrolls in.
 const KatanaScene = lazy(() => import('./KatanaScene'));
 
 interface Props {
   src: string;
-  /** Static render shown without JS or WebGL, under reduced motion and while loading. */
+  /**
+   * Static render of the final pose, shown only when the scene cannot run: no
+   * JS, no WebGL, reduced motion or a failed load. Never while loading: the
+   * scene starts small, so showing the final pose first would jump.
+   */
   poster: { src: string; width: number; height: number };
   /** The TFG card. It stays in front: the katana lives behind it and around its edges. */
   children: ReactNode;
@@ -50,8 +55,9 @@ interface Props {
 /**
  * The TFG katana behind the thesis card, moved by the scroll. The canvas is a
  * full-bleed layer below the section content (negative z-index inside the
- * section's stacking context), taller than the card by `--katana-bleed` above
- * and below, so the katana can show around it without covering any text.
+ * section's stacking context), a band from just under the section title to a
+ * little below the card, faded at its top and bottom edges. The card is
+ * narrower than the section and centred, so the katana shows at its sides.
  */
 export default function KatanaBackdrop({ src, poster, children }: Props) {
   const wrapper = useRef<HTMLDivElement>(null);
@@ -63,6 +69,8 @@ export default function KatanaBackdrop({ src, poster, children }: Props) {
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [webgl, setWebgl] = useState(true);
+  useEffect(() => setWebgl(supportsWebGL()), []);
 
   // 0 when the card enters at the bottom of the viewport, 1 when it leaves at the
   // top. A soft spring takes the steps out of wheel scrolling without lagging.
@@ -78,6 +86,7 @@ export default function KatanaBackdrop({ src, poster, children }: Props) {
       layout.current = {
         width: l.width,
         height: l.height,
+        container: wrapper.current?.clientWidth ?? c.width,
         card: {
           x: c.left + c.width / 2 - (l.left + l.width / 2),
           y: l.top + l.height / 2 - (c.top + c.height / 2),
@@ -95,9 +104,9 @@ export default function KatanaBackdrop({ src, poster, children }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  // Load the scene once the section is close, when the browser is idle.
+  // Load the scene well before the section arrives, when the browser is idle.
   useEffect(() => {
-    if (reducedMotion !== false || !supportsWebGL() || !wrapper.current) return;
+    if (reducedMotion !== false || !webgl || !wrapper.current) return;
     let timer = 0;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -107,14 +116,14 @@ export default function KatanaBackdrop({ src, poster, children }: Props) {
         const whenIdle = window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 300));
         timer = whenIdle(() => setMounted(true), { timeout: 1500 });
       },
-      { rootMargin: '50% 0px' },
+      { rootMargin: '100% 0px' },
     );
     observer.observe(wrapper.current);
     return () => {
       observer.disconnect();
       (window.cancelIdleCallback ?? window.clearTimeout)(timer);
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, webgl]);
 
   const handleInvalidate = useCallback((fn: () => void) => {
     invalidate.current = fn;
@@ -124,14 +133,15 @@ export default function KatanaBackdrop({ src, poster, children }: Props) {
   const handleError = useCallback(() => setFailed(true), []);
 
   const live = mounted && !failed;
+  // The poster stands in only where the scene will not run (see .katana-poster).
+  const fallback = reducedMotion === true || !webgl || failed;
 
   return (
     <div ref={wrapper} className="katana-backdrop relative">
       <div
         ref={layer}
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 -z-10 w-screen -translate-x-1/2"
-        style={{ top: 'calc(var(--katana-bleed) * -1)', bottom: 'calc(var(--katana-bleed) * -1)' }}
+        className="katana-layer pointer-events-none absolute left-1/2 -z-10 w-screen -translate-x-1/2"
       >
         <img
           src={poster.src}
@@ -140,9 +150,9 @@ export default function KatanaBackdrop({ src, poster, children }: Props) {
           alt=""
           loading="lazy"
           decoding="async"
-          className="katana-poster transition-opacity duration-500 ease-out data-[hidden=true]:opacity-0"
+          className="katana-poster"
           style={posterPlacement}
-          data-hidden={ready && !failed}
+          data-fallback={fallback}
         />
         {live && (
           <div
@@ -163,7 +173,9 @@ export default function KatanaBackdrop({ src, poster, children }: Props) {
           </div>
         )}
       </div>
-      <div ref={card}>{children}</div>
+      <div ref={card} className="mx-auto max-w-[46rem]">
+        {children}
+      </div>
     </div>
   );
 }

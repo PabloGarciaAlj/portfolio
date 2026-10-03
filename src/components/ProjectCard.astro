@@ -10,14 +10,21 @@ interface Props {
   /** Wide card with a media slot next to the text. */
   media?: { kind: 'image' | 'model'; label: string };
   reverse?: boolean;
+  /**
+   * Narrow card (TFG on the landing): half image, half text, fewer tags, so it
+   * is short and leaves the sides free for the katana behind it.
+   */
+  narrow?: boolean;
   headingLevel?: 'h3' | 'h4';
   class?: string;
 }
 
-const { project, media, reverse = false, headingLevel = 'h3', class: className } = Astro.props;
+const { project, media, reverse = false, narrow = false, headingLevel = 'h3', class: className } = Astro.props;
 const { title, summary, context, year, stack, cover } = project.data;
 const Heading = headingLevel;
-const visibleStack = stack.slice(0, 6);
+const visibleStack = stack.slice(0, narrow ? 4 : 6);
+const mediaSpan = narrow ? 'md:col-span-6' : 'md:col-span-7';
+const textSpan = narrow ? 'md:col-span-6' : 'md:col-span-5';
 const hiddenCount = stack.length - visibleStack.length;
 ---
 
@@ -29,7 +36,13 @@ const hiddenCount = stack.length - visibleStack.length;
     className,
   ]}
 >
-  <div class:list={['flex-1', media && 'grid gap-6 md:grid-cols-12 md:items-center md:gap-10']}>
+  <div
+    class:list={[
+      'flex-1',
+      media && 'grid gap-6 md:grid-cols-12 md:items-center',
+      media && (narrow ? 'md:gap-6' : 'md:gap-10'),
+    ]}
+  >
     {
       media &&
         (cover ? (
@@ -38,18 +51,26 @@ const hiddenCount = stack.length - visibleStack.length;
             src={cover}
             alt=""
             widths={[480, 720, 960, 1280]}
-            sizes="(min-width: 1152px) 640px, (min-width: 768px) 56vw, 92vw"
+            sizes={
+              narrow
+                ? '(min-width: 768px) 352px, 92vw'
+                : '(min-width: 1152px) 640px, (min-width: 768px) 56vw, 92vw'
+            }
             formats={['avif', 'webp']}
-            class="aspect-[16/10] w-full rounded-xl border border-line object-cover object-top"
+            class:list={[
+              'w-full rounded-xl border border-line object-cover',
+              // Narrow: a closer, taller crop on the central poses.
+              narrow ? 'aspect-[16/10] object-[50%_40%] md:aspect-[6/5]' : 'aspect-[16/10] object-top',
+            ]}
             pictureAttributes={{
-              class: ['block md:col-span-7', reverse && 'md:order-2'].filter(Boolean).join(' '),
+              class: ['block', mediaSpan, reverse && 'md:order-2'].filter(Boolean).join(' '),
             }}
           />
         ) : (
           <MediaPlaceholder
             kind={media.kind}
             label={media.label}
-            class:list={['aspect-[16/10] md:col-span-7', reverse && 'md:order-2']}
+            class:list={['aspect-[16/10]', mediaSpan, reverse && 'md:order-2']}
           />
         ))
     }
@@ -57,13 +78,13 @@ const hiddenCount = stack.length - visibleStack.length;
     <div
       class:list={[
         'relative flex flex-col',
-        media ? 'px-3 pb-4 md:col-span-5 md:px-2 md:py-6' : 'h-full',
+        media ? ['px-3 pb-4 md:px-2', textSpan, narrow ? 'md:py-2' : 'md:py-6'] : 'h-full',
       ]}
     >
       <span
         class:list={[
           'absolute top-0 text-muted transition-[color,transform] duration-200 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent',
-          media ? 'right-3 md:top-6 md:right-2' : 'right-0',
+          media ? ['right-3 md:right-2', narrow ? 'md:top-2' : 'md:top-6'] : 'right-0',
         ]}
         aria-hidden="true"
       >
@@ -75,13 +96,15 @@ const hiddenCount = stack.length - visibleStack.length;
       <Heading
         class:list={[
           'mt-3 pr-8 leading-tight font-bold tracking-[-0.02em] text-balance',
-          media ? 'text-2xl md:text-[2rem]' : 'text-2xl',
+          media && !narrow ? 'text-2xl md:text-[2rem]' : 'text-2xl',
         ]}
         transition:name={`project-title-${project.id}`}
       >
         {title}
       </Heading>
-      <p class="mt-3 leading-relaxed text-pretty text-muted">{summary}</p>
+      <p class:list={['mt-3 leading-relaxed text-pretty text-muted', narrow && 'md:text-[0.9375rem]']}>
+        {summary}
+      </p>
       <ul class="mt-auto flex flex-wrap gap-1.5 pt-5" aria-label="Tecnologías">
         {
           visibleStack.map((tech) => (

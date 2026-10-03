@@ -1,10 +1,10 @@
-// Where the katana sits for a given scroll progress. Each animation option
-// (one per branch) only changes `poseAt`; the stage, lighting and loading are
-// shared.
+// Where the katana sits for a given scroll progress. The stage, lighting and
+// loading live in KatanaScene / KatanaBackdrop; this file is the choreography.
 //
 // Units are CSS pixels in the backdrop layer, origin at the layer centre, x to
 // the right, y up. The card occupies `card` in the same space, so a pose can be
-// placed relative to it (the katana lives behind the card and around its edges).
+// placed relative to it: the katana crosses diagonally *behind* the card and
+// shows in the free space at its sides, above and below.
 
 export interface Rect {
   /** Centre of the rect. */
@@ -18,9 +18,11 @@ export interface Layout {
   /** The backdrop layer (the canvas), in CSS pixels. */
   width: number;
   height: number;
+  /** Width of the section's content (the card is narrower and centred in it). */
+  container: number;
   /** The TFG card, relative to the layer centre. */
   card: Rect;
-  /** Narrow viewport: the card stacks and the side margins are tiny. */
+  /** Narrow viewport: the card takes the full width, only above and below are free. */
   compact: boolean;
 }
 
@@ -41,42 +43,82 @@ export interface Pose {
 }
 
 /**
- * The poster (katana-poster.webp) is the rest pose rendered with the stage
- * lights, tip to the right and no tilt: where its habaki sits in the image (as
+ * The poster (katana-poster.webp) is the final pose (`poseAt(1)`) rendered with
+ * the stage lights, with no tilt: where its habaki sits in the image (as
  * fractions of its size), how wide it is for a given katana length, and its
  * aspect ratio. Used to place it like the 3D pose. Re-measure when re-rendered.
  */
-export const POSTER = { habakiX: 0.2901, habakiY: 0.8048, widthPerLength: 0.9894, aspect: 2196 / 335 };
+export const POSTER = { habakiX: 0.2401, habakiY: 0.7789, widthPerLength: 1.0573, aspect: 3313 / 403 };
 
 /** Typical layouts the poster is placed for, before any JS runs. */
 export const NOMINAL_LAYOUTS: Record<'wide' | 'compact', Layout> = {
-  wide: { width: 1440, height: 406 + 2 * 180, card: { x: 0, y: 0, width: 1088, height: 406 }, compact: false },
-  compact: { width: 390, height: 640 + 2 * 120, card: { x: 0, y: 0, width: 358, height: 640 }, compact: true },
+  wide: {
+    width: 1440,
+    height: 317 + 100 + 110,
+    container: 1088,
+    card: { x: 0, y: -5, width: 736, height: 317 },
+    compact: false,
+  },
+  compact: {
+    width: 390,
+    height: 548 + 120 + 96,
+    container: 358,
+    card: { x: 0, y: 0, width: 358, height: 548 },
+    compact: true,
+  },
 };
 
-/** Scroll progress `t`: 0 when the card enters from the bottom, 1 when it leaves at the top. */
-export function poseAt(_t: number, layout: Layout): Pose {
-  return restPose(layout);
-}
+// Where the habaki sits along the katana, pommel (0) to tip (1), measured on
+// the model (z from -0.567 to 1.217, habaki at 0).
+const HABAKI_ALONG = 0.318;
+// Edge up as modelled plus a little turn, so the flat catches the light.
+const REST_ROLL = 0.3;
 
 /**
- * Base composition: the katana lies in the band between the section title and
- * the card, handle to the left and tip to the right, with its lower part tucked
- * behind the card's top edge as if resting behind it. The tip runs past the
- * card's right edge into the margin.
+ * Scroll progress `t`: 0 when the card enters from the bottom, 1 when it leaves
+ * at the top (0.5 = card centred on screen).
+ *
+ * The katana lies diagonally behind the card. It starts small, its two ends
+ * just showing past the card's sides, and comes closer as the card rises:
+ * it grows to about twice the section's width while it makes one full, smooth
+ * turn on its own axis, so the light runs across the steel and the guard spins.
+ * It ends with the guard in the left margin and the blade crossing behind the
+ * card to the right edge, and holds there while the card leaves.
  */
-export function restPose({ card, compact }: Layout): Pose {
-  const length = compact ? card.width * 1.08 : Math.min(card.width * 1.02, 1240);
-  const top = card.y + card.height / 2;
+export function poseAt(t: number, layout: Layout): Pose {
+  const { card, compact, container } = layout;
+  // Both eased over the same stretch of scroll: no step, no sudden start or stop.
+  const grow = ease(0.02, 0.52, t);
+  const spin = ease(0.04, 0.5, t);
+
+  const start = card.width * (compact ? 1.9 : 1.35);
+  const end = compact ? container * 2.8 : Math.min(container * 1.92, 2600);
+  const length = start + (end - start) * grow;
+
+  // Steep on phones, where only the space above and below the card is free.
+  const tilt = compact ? 1.12 : 0.22;
+  // Turned away at first, facing the viewer more as it comes closer.
+  const yaw = -0.55 + 0.25 * grow;
+
+  // The point of the katana kept over the card's centre: its middle at first,
+  // then a little towards the tip, so the guard ends up beside the card.
+  const focus = 0.5 + (compact ? 0.06 : 0.08) * grow;
+  const along = (focus - HABAKI_ALONG) * length * Math.cos(yaw);
+
   return {
-    // Habaki about a third of the way along, as on the real sword.
-    x: card.x - card.width / 2 + length * (compact ? 0.3 : 0.36),
-    y: top + length * (compact ? 0.008 : 0.002),
+    x: card.x - along * Math.cos(tilt),
+    y: card.y - along * Math.sin(tilt),
     z: 0,
     length,
-    tilt: compact ? 0.035 : 0.025,
-    // A slight turn shows the face of the guard, as in the Blender render.
-    yaw: -0.32,
-    roll: 0.3,
+    tilt,
+    yaw,
+    // One full turn, ending at the resting angle.
+    roll: REST_ROLL - (1 - spin) * Math.PI * 2,
   };
+}
+
+/** 0 before `from`, 1 after `to`, eased in between (smoothstep). */
+function ease(from: number, to: number, t: number) {
+  const x = Math.max(0, Math.min(1, (t - from) / (to - from)));
+  return x * x * (3 - 2 * x);
 }

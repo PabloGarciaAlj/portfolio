@@ -22,16 +22,17 @@ const others = projects.filter((p) => !p.data.featured);
   <div class="mt-10 space-y-4 md:mt-14">
     {
       thesis.map((project) => {
+        const backdrop = project.data.backdrop;
         const card = (
           <ProjectCard
             project={project}
             media={{ kind: 'model', label: 'Visor 3D del personaje (pendiente)' }}
+            narrow={!!backdrop}
           />
         );
-        const backdrop = project.data.backdrop;
         return backdrop ? (
           <KatanaBackdrop
-            client:visible
+            client:idle
             src={backdrop.src}
             poster={{ src: backdrop.poster.src, width: backdrop.poster.width, height: backdrop.poster.height }}
           >
