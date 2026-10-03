@@ -234,3 +234,48 @@
     animation-delay: calc(var(--i, 0) * 70ms);
   }
 }
+
+/*
+ * Katana behind the TFG card (KatanaBackdrop.tsx). The projects section is the
+ * size container, so cqw is the card width; it also becomes the stacking
+ * context that keeps the katana layer under the section's text.
+ */
+.katana-section {
+  container-type: inline-size;
+}
+/* --katana-band: space kept free between the title and the card for the katana. */
+.katana-backdrop {
+  --katana-bleed: 120px;
+  --katana-band: 4.5rem;
+  margin-top: var(--katana-band);
+}
+@media (min-width: 768px) {
+  .katana-backdrop {
+    --katana-bleed: 180px;
+    --katana-band: 8.5rem;
+  }
+}
+/* Static render placed like the 3D pose at mid scroll (variables set inline). */
+.katana-poster {
+  --x: var(--poster-x);
+  --y: var(--poster-y);
+  --length: var(--poster-length);
+  --tilt: var(--poster-tilt);
+  --width: calc(var(--length) * var(--poster-width-per-length));
+  position: absolute;
+  max-width: none;
+  width: var(--width);
+  height: auto;
+  left: calc(50% + var(--x) - var(--width) * var(--poster-habaki-x));
+  top: calc(var(--katana-bleed) + var(--y) - var(--width) / var(--poster-aspect) * var(--poster-habaki-y));
+  transform-origin: calc(var(--poster-habaki-x) * 100%) calc(var(--poster-habaki-y) * 100%);
+  rotate: var(--tilt);
+}
+@media (max-width: 767px) {
+  .katana-poster {
+    --x: var(--poster-x-compact);
+    --y: var(--poster-y-compact);
+    --length: var(--poster-length-compact);
+    --tilt: var(--poster-tilt-compact);
+  }
+}

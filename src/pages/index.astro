@@ -16,7 +16,8 @@ import { profile } from '../data/profile';
   description={profile.positioning}
 >
   <SiteHeader />
-  <main id="contenido">
+  {/* Clips the full-bleed katana layer of the projects section (no horizontal scroll). */}
+  <main id="contenido" class="overflow-x-clip">
     <Hero />
     <Projects />
     <Experience />

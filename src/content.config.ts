@@ -33,6 +33,10 @@ const projects = defineCollection({
             .default([]),
         })
         .optional(),
+      // Prop shown behind the project's card on the landing and moved by the
+      // scroll: .glb in /public/models, plus a static render for when it cannot
+      // run (no JS or WebGL, reduced motion) and while it loads. Decorative.
+      backdrop: z.object({ src: z.string(), poster: image() }).optional(),
       links: z.object({ demo: z.url().optional(), repo: z.url().optional() }).optional(),
       confidential: z.boolean().default(false), // true = no screenshots or client names
       featured: z.boolean().default(true),

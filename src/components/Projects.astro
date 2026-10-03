@@ -1,6 +1,7 @@
 ---
 import { ArrowRight } from '@phosphor-icons/react/ssr';
 import ProjectCard from './ProjectCard.astro';
+import KatanaBackdrop from './katana/KatanaBackdrop.tsx';
 import { getProjects } from '../lib/projects';
 
 const projects = await getProjects();
@@ -14,18 +15,32 @@ const others = projects.filter((p) => !p.data.featured);
 <section
   id="proyectos"
   aria-labelledby="proyectos-title"
-  class="mx-auto max-w-6xl scroll-mt-16 px-4 pt-8 pb-20 sm:px-6 md:pt-16 md:pb-28 lg:px-8"
+  class="katana-section mx-auto max-w-6xl scroll-mt-16 px-4 pt-8 pb-20 sm:px-6 md:pt-16 md:pb-28 lg:px-8"
 >
   <h2 id="proyectos-title" class="text-4xl font-bold tracking-[-0.03em] md:text-5xl">Proyectos</h2>
 
   <div class="mt-10 space-y-4 md:mt-14">
     {
-      thesis.map((project) => (
-        <ProjectCard
-          project={project}
-          media={{ kind: 'model', label: 'Visor 3D del personaje (pendiente)' }}
-        />
-      ))
+      thesis.map((project) => {
+        const card = (
+          <ProjectCard
+            project={project}
+            media={{ kind: 'model', label: 'Visor 3D del personaje (pendiente)' }}
+          />
+        );
+        const backdrop = project.data.backdrop;
+        return backdrop ? (
+          <KatanaBackdrop
+            client:visible
+            src={backdrop.src}
+            poster={{ src: backdrop.poster.src, width: backdrop.poster.width, height: backdrop.poster.height }}
+          >
+            {card}
+          </KatanaBackdrop>
+        ) : (
+          card
+        );
+      })
     }
   </div>
 
