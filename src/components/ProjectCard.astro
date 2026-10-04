@@ -32,7 +32,9 @@ const hiddenCount = stack.length - visibleStack.length;
 <a
   href={`/proyectos/${project.id}/`}
   class:list={[
-    'group flex flex-col rounded-xl border border-line bg-surface transition-[border-color,transform] duration-200 ease-out hover:border-line-strong active:scale-[0.995]',
+    'group flex flex-col rounded-xl border border-line transition-[border-color,transform] duration-200 ease-out hover:border-line-strong active:scale-[0.995]',
+    // Narrow (TFG): frosted glass, so the katana behind it shows through.
+    narrow ? 'glass-card' : 'bg-surface',
     media ? 'p-3 md:p-4' : 'p-6 md:p-8',
     className,
   ]}
