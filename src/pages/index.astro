@@ -1,29 +1,5 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import SiteHeader from '../components/SiteHeader.astro';
-import Hero from '../components/Hero.astro';
-import Projects from '../components/Projects.astro';
-import Experience from '../components/Experience.astro';
-import Skills from '../components/Skills.astro';
-import Education from '../components/Education.astro';
-import Contact from '../components/Contact.astro';
-import SiteFooter from '../components/SiteFooter.astro';
-import { profile } from '../data/profile';
+import HomePage from '../components/HomePage.astro';
 ---
 
-<BaseLayout
-  title={`${profile.name} · Ingeniero Multimedia y desarrollador full-stack`}
-  description={profile.positioning}
->
-  <SiteHeader />
-  {/* Clips the full-bleed katana layer of the projects section (no horizontal scroll). */}
-  <main id="contenido" class="overflow-x-clip">
-    <Hero />
-    <Projects />
-    <Experience />
-    <Skills />
-    <Education />
-    <Contact />
-  </main>
-  <SiteFooter />
-</BaseLayout>
+<HomePage />

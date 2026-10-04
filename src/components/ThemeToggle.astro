@@ -8,6 +8,9 @@
 // moon: a masked circle grows and a second circle in the mask slides over it
 // (technique from Adam Argyle, web.dev "Building a theme switch component").
 // Its 8 rays are generated around the centre.
+import { getLang, useTranslations } from '../i18n/ui';
+
+const t = useTranslations(getLang(Astro.currentLocale));
 const rays = Array.from({ length: 8 }, (_, i) => {
   const a = (i * Math.PI) / 4;
   const at = (r: number) => [12 + r * Math.cos(a), 12 + r * Math.sin(a)].map((n) => +n.toFixed(2));
@@ -21,7 +24,7 @@ const rays = Array.from({ length: 8 }, (_, i) => {
   type="button"
   role="switch"
   aria-checked="false"
-  aria-label="Modo oscuro"
+  aria-label={t.theme.dark}
   data-theme-toggle
   class="theme-switch -my-2.5 grid h-11 w-14 shrink-0 place-items-center"
 >

@@ -1,6 +1,8 @@
 ---
-import { profile } from '../data/profile';
+import { getContent } from '../data/profile';
+import { getLang } from '../i18n/ui';
 
+const { profile } = getContent(getLang(Astro.currentLocale));
 const year = new Date().getFullYear();
 ---
 

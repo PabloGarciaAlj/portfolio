@@ -1,0 +1,57 @@
+---
+title: 3D character for an action video game
+summary: A character with a Japanese, dark-fantasy look, taken from first silhouettes to a playable prototype in Unity.
+context: tfg
+year: '2026'
+role: 'Solo project: design, modelling, texturing, rigging, animation and integration'
+stack: [Blender, Substance 3D Painter, Rigify, Mixamo, Rokoko Studio Live, Unity]
+cover: ../../../assets/projects/personaje-3d-videojuego/poses.webp
+coverAlt: 'Render of the character in six poses: T-pose, crouched and sneaking, on guard with the katana drawn, and standing.'
+model:
+  src: /models/character.glb
+  poster: ../../../assets/projects/personaje-3d-videojuego/viewer-poster.webp
+  idle: Stay_Idle_Retarget
+  animations:
+    - clip: Walking_Hurt
+      label: Walk
+    - clip: Crouched_Sneaking
+      label: Crouch
+    - clip: Slash_Basico
+      label: Basic attack
+      loop: false
+    - clip: Slack_Complejo
+      label: Combo attack
+      loop: false
+  alt: '3D model of the character at rest, katana in hand: black kimono with golden flowers, golden mask, bandaged forearms and waraji sandals.'
+backdrop:
+  src: /models/katana.glb
+  poster: ../../../assets/projects/personaje-3d-videojuego/katana-poster.webp
+confidential: false
+featured: true
+order: 1
+---
+
+## Goal
+
+My bachelor's thesis in Multimedia Engineering: design and build an original 3D character for an action game prototype, going through the whole production pipeline, from the idea to the engine. I started with no training in drawing or concept art.
+
+## Process
+
+- **Design:** silhouettes in Krita and reference boards in PureRef (Japanese clothing, hairstyles, weapons, combat poses).
+- **Modelling in Blender:** a female base body built with polygon modelling; a sculpted mask with a side cut that reveals part of the face; hair made with hair cards; a katana in low and high poly versions; kimono, trousers, bandages, a belt with braided cords and waraji sandals.
+- **PBR texturing** in Substance 3D Painter: 4K baking and cloth, skin and metal materials with wear, dirt and blood.
+- **Rig** with Rigify and manual weight correction with Weight Painting.
+- **Animation:** five Mixamo clips (idle, hurt walk, crouched sneak and two katana attacks) retargeted to the rig with Rokoko Studio Live.
+- **Unity (URP):** Animator Controller, a control script for keyboard or gamepad and a third-person camera with Cinemachine.
+
+## Technical decisions
+
+- **Low-to-medium density mesh** from the start, without relying on subdivision, to keep control of the topology and the polygon count.
+- **High → low poly katana:** the detail of bevels and reliefs is baked into textures to keep the geometry light.
+- **No facial bones in the rig**, since the character has no facial animation. Rigid pieces (mask, hair, cords, katana) are parented to a bone and do not deform.
+- **Reusable retargeting:** the bone mapping between Mixamo and Rigify was set up once, exported to JSON and applied to the remaining animations.
+- **Movement by script** instead of Root Motion, which did not read some of the animations correctly. Movement is relative to the camera, with smoothed transitions between states.
+
+## Result
+
+A Windows build of the prototype in which the character explores a level, switches between walking and sneaking, and performs two attacks, with an orbiting third-person camera.

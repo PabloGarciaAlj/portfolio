@@ -11,6 +11,7 @@ import {
   SwordIcon,
 } from '@phosphor-icons/react';
 import type { Clip, StageHandle } from './CharacterStage';
+import type { ViewerLabels } from '../i18n/ui';
 
 // three.js and the scene only download when the visitor asks for the model.
 const CharacterStage = lazy(() => import('./CharacterStage'));
@@ -28,11 +29,13 @@ interface Props {
    * sneak) toggle on and off; the rest (attacks) play once and return to the idle.
    */
   animations?: (Clip & { label: string })[];
+  /** Interface text in the page language. */
+  labels: ViewerLabels;
 }
 
 type Status = 'idle' | 'loading' | 'ready' | 'error';
 
-export default function CharacterViewer({ src, size, poster, alt, idle, animations = [] }: Props) {
+export default function CharacterViewer({ src, size, poster, alt, idle, animations = [], labels }: Props) {
   const [hydrated, setHydrated] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [progress, setProgress] = useState(0);
@@ -52,8 +55,8 @@ export default function CharacterViewer({ src, size, poster, alt, idle, animatio
   const handleError = useCallback(() => setStatus('error'), []);
   const handleClipEnd = useCallback(() => setClip(null), []);
   const groups = [
-    { label: 'Movimiento', clips: animations.filter((a) => a.loop) },
-    { label: 'Ataques', clips: animations.filter((a) => !a.loop) },
+    { label: labels.movement, clips: animations.filter((a) => a.loop) },
+    { label: labels.attacks, clips: animations.filter((a) => !a.loop) },
   ].filter((group) => group.clips.length > 0);
 
   // Controls render as soon as the visitor asks for the model (disabled until it
@@ -106,7 +109,7 @@ export default function CharacterViewer({ src, size, poster, alt, idle, animatio
               }}
             >
               <CubeIcon size={18} weight="bold" aria-hidden="true" />
-              Ver en 3D
+              {labels.load}
               <span className="font-mono text-xs opacity-70">{size}</span>
             </button>
           </div>
@@ -116,13 +119,13 @@ export default function CharacterViewer({ src, size, poster, alt, idle, animatio
           className="pointer-events-none absolute inset-x-0 bottom-0 p-4 text-center font-mono text-xs text-muted sm:p-6"
           aria-live="polite"
         >
-          {status === 'loading' && `Cargando modelo · ${Math.round(progress)} %`}
-          {status === 'error' && 'No se ha podido cargar el visor 3D en este navegador.'}
+          {status === 'loading' && `${labels.loading} · ${Math.round(progress)} %`}
+          {status === 'error' && labels.error}
         </p>
 
         {ready && (
           <figcaption className="pointer-events-none absolute bottom-0 left-0 hidden p-4 font-mono text-xs text-muted sm:block">
-            Arrastra para girar · Rueda o pellizco para acercar
+            {labels.hint}
           </figcaption>
         )}
       </figure>
@@ -165,22 +168,22 @@ export default function CharacterViewer({ src, size, poster, alt, idle, animatio
 
           <div
             role="toolbar"
-            aria-label="Controles del visor 3D"
+            aria-label={labels.toolbar}
             className="ml-auto flex gap-1 rounded-xl border border-line bg-canvas/85 p-1 backdrop-blur-md sm:absolute sm:right-4 sm:bottom-4"
           >
-            <ToolButton ref={firstTool} disabled={!ready} label="Girar a la izquierda" onClick={() => stage.current?.rotate(-1)}>
+            <ToolButton ref={firstTool} disabled={!ready} label={labels.rotateLeft} onClick={() => stage.current?.rotate(-1)}>
               <ArrowArcLeftIcon size={18} weight="bold" aria-hidden="true" />
             </ToolButton>
-            <ToolButton disabled={!ready} label="Girar a la derecha" onClick={() => stage.current?.rotate(1)}>
+            <ToolButton disabled={!ready} label={labels.rotateRight} onClick={() => stage.current?.rotate(1)}>
               <ArrowArcRightIcon size={18} weight="bold" aria-hidden="true" />
             </ToolButton>
-            <ToolButton disabled={!ready} label="Acercar" onClick={() => stage.current?.zoom(1)}>
+            <ToolButton disabled={!ready} label={labels.zoomIn} onClick={() => stage.current?.zoom(1)}>
               <MagnifyingGlassPlusIcon size={18} weight="bold" aria-hidden="true" />
             </ToolButton>
-            <ToolButton disabled={!ready} label="Alejar" onClick={() => stage.current?.zoom(-1)}>
+            <ToolButton disabled={!ready} label={labels.zoomOut} onClick={() => stage.current?.zoom(-1)}>
               <MagnifyingGlassMinusIcon size={18} weight="bold" aria-hidden="true" />
             </ToolButton>
-            <ToolButton disabled={!ready} label="Restablecer vista" onClick={() => stage.current?.reset()}>
+            <ToolButton disabled={!ready} label={labels.reset} onClick={() => stage.current?.reset()}>
               <ArrowCounterClockwiseIcon size={18} weight="bold" aria-hidden="true" />
             </ToolButton>
           </div>

@@ -2,7 +2,13 @@
 import { Picture } from 'astro:assets';
 import { DownloadSimple } from '@phosphor-icons/react/ssr';
 import portrait from '../assets/foto_perfil.jpg';
-import { profile } from '../data/profile';
+import { getContent } from '../data/profile';
+import { getLang, sectionId, useTranslations } from '../i18n/ui';
+import CvLanguage from './CvLanguage.astro';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const { profile } = getContent(lang);
 ---
 
 <section
@@ -40,10 +46,11 @@ import { profile } from '../data/profile';
     </p>
 
     <div class="rise mt-9 flex flex-wrap gap-3" style="--i: 3">
-      <a href="#proyectos" class="btn btn-primary">Ver proyectos</a>
-      <a href={profile.cv} download class="btn btn-secondary">
+      <a href={`#${sectionId('projects', lang)}`} class="btn btn-primary">{t.hero.viewProjects}</a>
+      <a href={profile.cv} download hreflang="es" class="btn btn-secondary">
         <DownloadSimple size={18} weight="bold" aria-hidden="true" />
-        Descargar CV
+        {t.hero.downloadCv}
+        <CvLanguage />
       </a>
     </div>
   </div>
@@ -51,7 +58,7 @@ import { profile } from '../data/profile';
   <div class="rise md:col-span-5" style="--i: 2">
     <Picture
       src={portrait}
-      alt="Retrato de Pablo García Aljibe"
+      alt={t.hero.portraitAlt}
       width={960}
       widths={[360, 560, 760, 960]}
       sizes="(min-width: 1152px) 440px, (min-width: 768px) 38vw, 92vw"

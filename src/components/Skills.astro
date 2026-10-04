@@ -1,14 +1,19 @@
 ---
-import { skills } from '../data/profile';
+import { getContent } from '../data/profile';
+import { getLang, sectionId, useTranslations } from '../i18n/ui';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const { skills } = getContent(lang);
 ---
 
 <section
-  id="habilidades"
+  id={sectionId('skills', lang)}
   aria-labelledby="habilidades-title"
   class="mx-auto max-w-6xl scroll-mt-16 px-4 py-20 sm:px-6 md:py-28 lg:px-8"
 >
   <h2 id="habilidades-title" class="text-4xl font-bold tracking-[-0.03em] md:text-5xl">
-    Habilidades
+    {t.skills.title}
   </h2>
 
   <dl class="mt-10 grid grid-cols-2 gap-x-6 gap-y-10 sm:gap-x-10 md:mt-14 lg:grid-cols-4">

@@ -1,0 +1,33 @@
+---
+// The landing, shared by / and /en/: every section reads the page language
+// from the URL (Astro.currentLocale).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SiteHeader from './SiteHeader.astro';
+import Hero from './Hero.astro';
+import Projects from './Projects.astro';
+import Experience from './Experience.astro';
+import Skills from './Skills.astro';
+import Education from './Education.astro';
+import Contact from './Contact.astro';
+import SiteFooter from './SiteFooter.astro';
+import { getContent } from '../data/profile';
+import { getLang, sectionId, useTranslations } from '../i18n/ui';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const { profile } = getContent(lang);
+---
+
+<BaseLayout title={`${profile.name} · ${t.meta.homeTitle}`} description={profile.positioning}>
+  <SiteHeader />
+  {/* Clips the full-bleed katana layer of the projects section (no horizontal scroll). */}
+  <main id={sectionId('content', lang)} class="overflow-x-clip">
+    <Hero />
+    <Projects />
+    <Experience />
+    <Skills />
+    <Education />
+    <Contact />
+  </main>
+  <SiteFooter />
+</BaseLayout>

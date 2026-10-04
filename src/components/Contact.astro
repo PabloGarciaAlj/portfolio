@@ -5,7 +5,13 @@ import {
   GithubLogoIcon,
   LinkedinLogoIcon,
 } from '@phosphor-icons/react/ssr';
-import { profile } from '../data/profile';
+import { getContent } from '../data/profile';
+import { getLang, sectionId, useTranslations } from '../i18n/ui';
+import CvLanguage from './CvLanguage.astro';
+
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const { profile } = getContent(lang);
 
 const socials = [
   { label: 'LinkedIn', href: profile.linkedin, Icon: LinkedinLogoIcon },
@@ -14,14 +20,14 @@ const socials = [
 ---
 
 <section
-  id="contacto"
+  id={sectionId('contact', lang)}
   aria-labelledby="contacto-title"
   class="scroll-mt-16 border-t border-line"
 >
   <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-28 lg:px-8">
-    <h2 id="contacto-title" class="text-4xl font-bold tracking-[-0.03em] md:text-5xl">Contacto</h2>
+    <h2 id="contacto-title" class="text-4xl font-bold tracking-[-0.03em] md:text-5xl">{t.contact.title}</h2>
     <p class="mt-4 max-w-xl text-lg leading-relaxed text-muted">
-      {profile.availability}. Escríbeme a:
+      {profile.availability}. {t.contact.writeTo}
     </p>
 
     {/* The address is shown to read or copy (one click selects it all); the
@@ -35,20 +41,21 @@ const socials = [
     <div class="mt-10 flex flex-wrap items-center gap-3">
       <a href={`mailto:${profile.email}`} class="btn btn-primary">
         <EnvelopeSimpleIcon size={18} weight="bold" aria-hidden="true" />
-        Enviar email
+        {t.contact.sendEmail}
       </a>
       {
         socials.map(({ label, href, Icon }) => (
           <a href={href} class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
             <Icon size={18} weight="bold" aria-hidden="true" />
             {label}
-            <span class="sr-only">(se abre en una pestaña nueva)</span>
+            <span class="sr-only">({t.nav.newTab})</span>
           </a>
         ))
       }
-      <a href={profile.cv} download class="btn btn-secondary">
+      <a href={profile.cv} download hreflang="es" class="btn btn-secondary">
         <DownloadSimpleIcon size={18} weight="bold" aria-hidden="true" />
-        Descargar CV
+        {t.hero.downloadCv}
+        <CvLanguage />
       </a>
     </div>
   </div>

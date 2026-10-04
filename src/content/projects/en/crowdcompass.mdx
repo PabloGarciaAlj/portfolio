@@ -1,0 +1,57 @@
+---
+title: CrowdCompass
+summary: An events web app that turns your ticket into a guided 3D route to your seat, with a context-aware chatbot. Live in production.
+context: académico
+year: '2025 - 2026'
+role: 'Frontend, chatbot and production server, in a team of five'
+stack:
+  [
+    Angular 16,
+    TypeScript,
+    WebGL,
+    Three.js,
+    Tailwind CSS,
+    Node.js,
+    Express,
+    Sequelize,
+    MySQL,
+    Dialogflow,
+    Docker,
+    Apache,
+    "Let's Encrypt",
+  ]
+cover: ../../../assets/projects/crowdcompass/landing-hero.png
+coverAlt: 'CrowdCompass landing page: the headline «Bienvenido a CrowdCompass» over a 3D stadium, with the Scan QR button and access to the tutorial. The interface is in Spanish.'
+gallery:
+  - src: ../../../assets/projects/crowdcompass/landing-tutorial.png
+    alt: 'Landing page tutorial: a carousel of sample tickets with their QR codes, and six numbered steps from scanning the ticket to asking the assistant.'
+    caption: Tutorial with sample tickets, to try it without a ticket.
+  - src: ../../../assets/projects/crowdcompass/recorrido-guiado.png
+    alt: 'First-person view of the guided route on a phone: a turquoise line climbs the stadium stairs towards the seat, with the controls for step 1 of 11.'
+    caption: Guided route to the seat.
+  - src: ../../../assets/projects/crowdcompass/recinto-puntos-interes.png
+    alt: '3D view of the stands on a phone with the points of interest menu: food and drink, information point, toilets, emergency exit and entrance gate.'
+    caption: Points of interest from the seat.
+links:
+  demo: https://crowdcompass.ovh
+confidential: false
+featured: true
+order: 6
+---
+
+## Problem
+
+In a stadium it is hard to find your gate and your seat. CrowdCompass turns the ticket into a guide: you scan its QR code, the venue loads in 3D and a first-person route takes you to your seat, with points of interest and an assistant along the way.
+
+## What I did
+
+A five-person team project in the 4th year of Multimedia Engineering. The 3D engine, the API and the Dialogflow agent were built by my teammates. My part:
+
+- **Landing page and user area:** design of the landing page and its tutorial, login, profile and «My events» with each user's tickets.
+- **Chatbot:** the interface and its connection to Dialogflow, from the frontend to the backend.
+- **Server on OVH:** Apache, HTTPS, security and the deployment of each release.
+
+## Technical decisions
+
+- **A chatbot with context.** Every query carries the current page and the scanned tickets, so the assistant answers based on where the user is: «show me my QR» only works inside an event.
+- **A server closed by default.** HTTPS enforced with Let's Encrypt and HSTS, and a Content Security Policy that only allows the origins the application needs.

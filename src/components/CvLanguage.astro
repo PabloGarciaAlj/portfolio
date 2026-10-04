@@ -1,0 +1,18 @@
+---
+// Inside a CV download button: says the PDF is in Spanish on pages in other
+// languages (there is no English CV yet). Nothing on the Spanish site.
+import { getLang, useTranslations } from '../i18n/ui';
+
+const note = useTranslations(getLang(Astro.currentLocale)).hero.cvLanguage;
+---
+
+{
+  note && (
+    <>
+      <span class="font-mono text-xs opacity-70" aria-hidden="true">
+        {note.label}
+      </span>
+      <span class="sr-only">({note.name})</span>
+    </>
+  )
+}

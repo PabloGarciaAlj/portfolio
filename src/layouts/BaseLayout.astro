@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import { Font } from 'astro:assets';
 import '../styles/global.css';
+import { getLang, languages, sectionId, translatePath, useTranslations } from '../i18n/ui';
 
 interface Props {
   title: string;
@@ -9,13 +10,23 @@ interface Props {
 }
 
 const { title, description } = Astro.props;
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+
+// hreflang alternates need absolute URLs, so they wait for `site` (the domain).
+const alternates = Astro.site
+  ? languages.map((code) => ({
+      code,
+      href: new URL(translatePath(Astro.url.pathname, code), Astro.site).href,
+    }))
+  : [];
 
 // Browser UI colour per theme: the --canvas of each theme in global.css.
 const themeColors = { light: '#f1ece3', dark: '#0f0f0e' };
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -105,9 +116,10 @@ const themeColors = { light: '#f1ece3', dark: '#0f0f0e' };
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:locale" content="es_ES" />
+    <meta property="og:locale" content={t.meta.ogLocale} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
+    {alternates.map(({ code, href }) => <link rel="alternate" hreflang={code} href={href} />)}
     <!-- TODO: og:image once there is a share image and a domain -->
 
     <Font cssVariable="--font-satoshi" preload />
@@ -116,10 +128,10 @@ const themeColors = { light: '#f1ece3', dark: '#0f0f0e' };
   </head>
   <body class="min-h-dvh">
     <a
-      href="#contenido"
+      href={`#${sectionId('content', lang)}`}
       class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-canvas"
     >
-      Saltar al contenido
+      {t.meta.skipToContent}
     </a>
     <slot />
   </body>

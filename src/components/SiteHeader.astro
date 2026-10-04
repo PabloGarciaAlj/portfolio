@@ -1,19 +1,27 @@
 ---
-import { profile } from '../data/profile';
 import Logo from '../assets/logo.svg';
 import { GithubLogoIcon, LinkedinLogoIcon } from '@phosphor-icons/react/ssr';
 import ThemeToggle from './ThemeToggle.astro';
+import { getContent } from '../data/profile';
+import { getLang, homePath, sectionPath, translatePath, useTranslations } from '../i18n/ui';
 
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const { profile } = getContent(lang);
+const otherLang = lang === 'es' ? 'en' : 'es';
+
+// `narrow`: hidden on the smallest phones (< 390px) to make room for the
+// language link. GitHub is also in the contact section and the project pages.
 const socials = [
-  { label: 'LinkedIn', href: profile.linkedin, Icon: LinkedinLogoIcon },
-  { label: 'GitHub', href: profile.github, Icon: GithubLogoIcon },
+  { label: 'LinkedIn', href: profile.linkedin, Icon: LinkedinLogoIcon, narrow: false },
+  { label: 'GitHub', href: profile.github, Icon: GithubLogoIcon, narrow: true },
 ];
 
 const links = [
-  { href: '/#proyectos', label: 'Proyectos' },
-  { href: '/#experiencia', label: 'Experiencia', wide: true },
-  { href: '/#habilidades', label: 'Habilidades', wide: true },
-  { href: '/#contacto', label: 'Contacto' },
+  { href: sectionPath('projects', lang), label: t.nav.projects },
+  { href: sectionPath('experience', lang), label: t.nav.experience, wide: true },
+  { href: sectionPath('skills', lang), label: t.nav.skills, wide: true },
+  { href: sectionPath('contact', lang), label: t.nav.contact },
 ];
 ---
 
@@ -21,19 +29,22 @@ const links = [
   class="sticky top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur-md supports-[not(backdrop-filter:blur(0))]:bg-canvas"
 >
   <nav
-    aria-label="Principal"
+    aria-label={t.nav.label}
     class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
   >
     {/* PGA monogram (same mark as the favicon), inlined so it takes the text
         colour of each theme. The link keeps the full name for assistive tech. */}
     <a
-      href="/"
-      aria-label={`${profile.name}, inicio`}
+      href={homePath(lang)}
+      aria-label={`${profile.name}, ${t.nav.home}`}
       class="-m-2 rounded-lg p-2 transition-opacity duration-200 ease-out hover:opacity-70"
     >
       <Logo class="block h-8 w-auto" aria-hidden="true" focusable="false" />
     </a>
-    <div class="flex items-center gap-3 sm:gap-7">
+    {/* Three groups (sections, profiles, preferences): visible gaps of 16px
+        inside each group and 40px between groups from sm up. Phones keep one
+        even 16px rhythm, there is no room for more. */}
+    <div class="flex items-center gap-4 sm:gap-10">
       <ul class="flex items-center gap-4 text-[0.9375rem] text-muted sm:gap-7">
         {
           links.map((link) => (
@@ -49,13 +60,13 @@ const links = [
           kept tight with negative margins so they fit next to the links at 360px. */}
       <ul class="-mx-2 flex items-center">
         {
-          socials.map(({ label, href, Icon }) => (
-            <li>
+          socials.map(({ label, href, Icon, narrow }) => (
+            <li class={narrow ? 'max-[389px]:hidden' : undefined}>
               <a
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`${label} (se abre en una pestaña nueva)`}
+                aria-label={`${label} (${t.nav.newTab})`}
                 title={label}
                 class="-my-2.5 grid h-11 w-9 place-items-center rounded-lg text-muted transition-[color,scale] duration-200 ease-out hover:text-ink active:scale-[0.94]"
               >
@@ -65,7 +76,22 @@ const links = [
           ))
         }
       </ul>
-      <ThemeToggle />
+      {/* Site preferences sit together at the end: language, then theme.
+          A plain link to the same page in the other language, written in that
+          language, so it works without JS. */}
+      <div class="flex items-center gap-1">
+        <a
+          href={translatePath(Astro.url.pathname, otherLang)}
+          hreflang={otherLang}
+          lang={otherLang}
+          title={t.language.switchTitle}
+          class="-my-2.5 -ml-2 grid h-11 w-9 place-items-center rounded-lg font-mono text-[0.8125rem] font-medium tracking-[0.04em] text-muted transition-[color,scale] duration-200 ease-out hover:text-ink active:scale-[0.94]"
+        >
+          <span aria-hidden="true">{t.language.switchLabel}</span>
+          <span class="sr-only">{t.language.switchName}</span>
+        </a>
+        <ThemeToggle />
+      </div>
     </div>
   </nav>
 </header>

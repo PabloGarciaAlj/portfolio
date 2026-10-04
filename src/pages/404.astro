@@ -1,8 +1,13 @@
 ---
+// A static site has a single 404 for every URL, so it stays in Spanish (the
+// default language) with a short way into the English version.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
-import { profile } from '../data/profile';
+import { getContent } from '../data/profile';
+import { homePath, sectionPath } from '../i18n/ui';
+
+const { profile } = getContent('es');
 ---
 
 <BaseLayout
@@ -22,9 +27,13 @@ import { profile } from '../data/profile';
       Puede que el enlace esté mal escrito o que la página se haya movido.
     </p>
     <div class="mt-9 flex flex-wrap gap-3">
-      <a href="/" class="btn btn-primary">Volver al inicio</a>
-      <a href="/#proyectos" class="btn btn-secondary">Ver proyectos</a>
+      <a href={homePath('es')} class="btn btn-primary">Volver al inicio</a>
+      <a href={sectionPath('projects', 'es')} class="btn btn-secondary">Ver proyectos</a>
     </div>
+    <p lang="en" class="mt-10 text-muted">
+      This page doesn't exist.
+      <a href={homePath('en')} hreflang="en" class="link font-medium text-ink">Go to the English site</a>
+    </p>
   </main>
   <SiteFooter />
 </BaseLayout>

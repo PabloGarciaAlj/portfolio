@@ -45,8 +45,9 @@ muestra de su criterio de diseño y de su nivel técnico.
 4. **Diseño antes que código.** Para la dirección visual de la landing, presenta 2–3
    propuestas (descritas o como maqueta rápida) y espera a que Pablo elija antes de
    construirla entera.
-5. **Idioma.** El contenido de la web va en español. El código (nombres de componentes,
-   variables, commits) va en inglés. Habla con Pablo en español.
+5. **Idioma.** La web es bilingüe: español en la raíz (por defecto) e inglés en `/en/`.
+   Todo texto nuevo se escribe en los dos idiomas (ver «Traducción» en la sección 4). El
+   código (nombres de componentes, variables, commits) va en inglés. Habla con Pablo en español.
 6. **Commits pequeños** y con mensajes claros en inglés. No hagas push sin que lo pida.
 
 ---
@@ -128,19 +129,36 @@ Instalados el 2026-10-03. Úsalos en lugar de recordar APIs o estimar métricas:
 │   └── favicon.svg
 └── src/
     ├── content.config.ts                 # esquema Zod de la colección `projects`
-    ├── content/projects/*.mdx            # un archivo por proyecto
-    ├── data/profile.ts                   # perfil, experiencia, habilidades, idiomas, contacto
+    ├── content/projects/{es,en}/*.mdx    # un archivo por proyecto y idioma (mismo nombre)
+    ├── data/profile.ts                   # perfil, experiencia, habilidades, idiomas, contacto (es/en)
+    ├── i18n/ui.ts                        # textos de interfaz, anclas y rutas por idioma
     ├── layouts/BaseLayout.astro          # <head>, SEO, fuentes, ClientRouter
     ├── components/                       # .astro (estáticos) y .tsx (islas)
     ├── pages/
-    │   ├── index.astro                   # landing
-    │   ├── proyectos/[slug].astro        # detalle de proyecto
-    │   └── 404.astro
+    │   ├── index.astro                   # landing (es) → components/HomePage.astro
+    │   ├── proyectos/[slug].astro        # detalle (es) → components/ProjectPage.astro
+    │   ├── en/index.astro                # landing (en)
+    │   ├── en/projects/[slug].astro      # detalle (en)
+    │   └── 404.astro                     # único, en español con enlace a /en/
     └── styles/global.css                 # @import "tailwindcss"; @theme { ... }
 ```
 
 Los datos personales viven en `src/data/profile.ts` y los proyectos en
 `src/content/projects/`. Los componentes no llevan texto de contenido escrito a mano.
+
+**Traducción (decidido con Pablo el 2026-10-04).** i18n nativo de Astro, sin librerías:
+
+- Los componentes leen el idioma de la URL con `getLang(Astro.currentLocale)` y sacan sus
+  textos de `useTranslations(lang)` (`src/i18n/ui.ts`) y `getContent(lang)` (`profile.ts`).
+  La versión inglesa está tipada como la española: si falta una clave, `astro check` falla.
+- Las anclas y la carpeta de proyectos se traducen (`/#proyectos` ↔ `/en/#projects`,
+  `/proyectos/x/` ↔ `/en/projects/x/`); el slug del proyecto es el mismo. Usa siempre
+  `sectionPath`, `projectPath` y `translatePath`, nunca rutas escritas a mano.
+- Un proyecto sin archivo en `en/` aparece en español en la versión inglesa.
+- Selector de idioma: enlace «EN»/«ES» en el header, a la izquierda del switch de tema.
+  Por debajo de 390 px se oculta el icono de GitHub del header para que quepa.
+- El CV solo existe en español: en inglés los botones lo indican con «ES».
+- `hreflang` alternativos: se generan solos en cuanto se configure `site` (dominio).
 
 ---
 
@@ -501,7 +519,7 @@ procesa con `gltf-transform` desde un script aparte, sin añadirlo al proyecto:
 | --- | --- |
 | Dirección visual (paleta, tipografía, layout del hero) | Pendiente: proponer 2–3 opciones |
 | Qué proyectos de prácticas se pueden nombrar y con qué material | Pendiente: Pablo |
-| ¿Versión en inglés? | De momento solo español. Si se añade, usar el i18n nativo de Astro (`/en/`). |
+| ¿Versión en inglés? | Hecho: i18n nativo de Astro con `/en/` (sección 4). CV en inglés pendiente: Pablo. |
 | URL de LinkedIn y GitHub | Hecho (sección 7.1) |
 | Dominio | Pendiente: Pablo |
 | 3D en la web | Decidido: React Three Fiber. Visor en la página del TFG (hecho). Personaje animado con el scroll en la sección del TFG de la landing (pendiente de reexportar el modelo con animaciones). |

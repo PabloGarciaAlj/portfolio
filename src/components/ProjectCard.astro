@@ -3,7 +3,8 @@ import type { CollectionEntry } from 'astro:content';
 import { Picture } from 'astro:assets';
 import { ArrowUpRight } from '@phosphor-icons/react/ssr';
 import MediaPlaceholder from './MediaPlaceholder.astro';
-import { contextLabel } from '../lib/projects';
+import { projectSlug } from '../lib/projects';
+import { getLang, projectPath, useTranslations } from '../i18n/ui';
 
 interface Props {
   project: CollectionEntry<'projects'>;
@@ -21,6 +22,9 @@ interface Props {
 }
 
 const { project, media, reverse = false, narrow = false, headingLevel = 'h3', class: className } = Astro.props;
+const lang = getLang(Astro.currentLocale);
+const t = useTranslations(lang);
+const slug = projectSlug(project);
 const { title, summary, context, year, stack, cover } = project.data;
 const Heading = headingLevel;
 const visibleStack = stack.slice(0, narrow ? 4 : 6);
@@ -30,7 +34,7 @@ const hiddenCount = stack.length - visibleStack.length;
 ---
 
 <a
-  href={`/proyectos/${project.id}/`}
+  href={projectPath(slug, lang)}
   class:list={[
     'group flex flex-col rounded-xl border border-line transition-[border-color,transform] duration-200 ease-out hover:border-line-strong active:scale-[0.995]',
     // Narrow (TFG): frosted glass, so the katana behind it shows through.
@@ -94,19 +98,19 @@ const hiddenCount = stack.length - visibleStack.length;
         <ArrowUpRight size={20} weight="bold" />
       </span>
       <p class="font-mono text-xs text-muted">
-        {contextLabel[context]} · {year}
+        {t.context[context]} · {year}
       </p>
       <Heading
         class:list={[
           'mt-3 pr-8 leading-tight font-bold tracking-[-0.02em] text-balance',
           narrow ? 'text-[1.75rem] md:text-[1.875rem]' : media ? 'text-2xl md:text-[2rem]' : 'text-2xl',
         ]}
-        transition:name={`project-title-${project.id}`}
+        transition:name={`project-title-${slug}`}
       >
         {title}
       </Heading>
       {!narrow && <p class="mt-3 leading-relaxed text-pretty text-muted">{summary}</p>}
-      <ul class="mt-auto flex flex-wrap gap-1.5 pt-5" aria-label="Tecnologías">
+      <ul class="mt-auto flex flex-wrap gap-1.5 pt-5" aria-label={t.projects.stack}>
         {
           visibleStack.map((tech) => (
             <li class="rounded-lg border border-line px-2 py-0.5 font-mono text-xs text-muted">
