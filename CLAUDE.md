@@ -271,7 +271,6 @@ salvo que Pablo lo confirme.
 | `asistente-voz-mayores` | Asistente conversacional y de voz para personas mayores (IBH · Amy) | Prácticas, 2026 | Panel de control y dashboard de valores biométricos en Angular 19 + Tailwind, con componentes accesibles, sobre una API Fastify integrada con OpenAI y Gemini. | Angular 19, Tailwind, Fastify, Prisma, PostgreSQL |
 | `legaltech-reclamaciones` | Plataforma legal-tech de reclamaciones aéreas (Juridocraft) | Prácticas, 2026 | Migración del frontend React a la API propia; procesamiento de PDF/DOCX con OCR. | React, Vite, Fastify, Prisma, PostgreSQL, Tesseract.js |
 | `crowdcompass` | CrowdCompass | Académico, 2025 – 2026 | Web de gestión de eventos con modelo 3D interactivo y chatbot, en producción en crowdcompass.ovh. Despliegue propio con Apache y SSH; metodología ABP. Equipo de cinco. **Parte de Pablo (confirmada):** landing, `/home` de usuario y login; interfaz del chatbot y su conexión frontend → backend → Dialogflow (el agente y sus intents no son suyos); servidor OVH completo (Apache, HTTPS con Let's Encrypt, cabeceras de seguridad y CSP, despliegues). 158 de 463 commits. | Angular, TypeScript, Node.js, MySQL, Apache |
-| `digitalforge` | DigitalForge | Académico, 2025 | Gestión de assets digitales (imagen, 3D, audio, vídeo) con carga, etiquetado y búsqueda. **Prioridad baja:** `featured: false` o al final. | React |
 
 `TODO (Pablo):` confirmar el rol exacto en cada proyecto de prácticas, qué se puede
 nombrar públicamente y qué imágenes hay disponibles (capturas propias, renders del TFG,
