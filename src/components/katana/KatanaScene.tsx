@@ -54,38 +54,112 @@ export default function KatanaScene({ src, progress, layout, onInvalidate, onRea
 
 /**
  * Studio lighting in the spirit of the Blender render: a polished blade is a
- * mirror, so what it shows is the environment. Soft boxes in a dark room give
- * the long light gradients along the steel; a key and a rim light
- * model the non-metal parts (wrap, wood, guard). Built from Lightformers, so
- * nothing is downloaded.
+ * mirror, so what it shows is the environment. Built from Lightformers (soft
+ * boxes, and dark flags that are just unlit panels), so nothing is downloaded.
+ *
+ * Each theme gets its own room, so the steel reads against the page behind it:
+ * - Dark page: a charcoal room with bright soft boxes. The steel shows long
+ *   bright bands over dark grey, and a back rim draws its outline against the
+ *   near-black page.
+ * - Light page: a bright, warm room, like a product shot on paper. The steel
+ *   turns silver instead of a black bar, and dark flags above and below give
+ *   it the dark bands that make it read as metal and keep its edges defined
+ *   against the light page. No bright rim: it would melt into the page.
  */
+type Panel = {
+  intensity: number;
+  color?: string;
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  scale: [number, number, number];
+};
+
+interface StudioSetup {
+  /** Ambient sky and ground colours. */
+  hemisphere: [string, string, number];
+  /** Key light from the front, upper right: wrap, wood and guard. */
+  key: { color: string; intensity: number };
+  /** Rim light from behind. */
+  rim: number;
+  /** The room's base colour, what the steel reflects where no panel is. */
+  room: string;
+  environmentIntensity: number;
+  exposure: number;
+  panels: Panel[];
+}
+
+const STUDIO: Record<'light' | 'dark', StudioSetup> = {
+  dark: {
+    hemisphere: ['#f4f1ec', '#2a2622', 0.45],
+    key: { color: '#ffffff', intensity: 1.5 },
+    rim: 1.6,
+    // Charcoal, not black: where the steel mirrors no panel it reads as dark
+    // grey metal, a step above the near-black page, instead of vanishing.
+    room: '#3a3836',
+    environmentIntensity: 1.45,
+    exposure: 1.05,
+    panels: [
+      // Ceiling soft box: the broad highlight along the flat of the blade.
+      { intensity: 1.7, position: [0, 6, 1], rotation: [Math.PI / 2, 0, 0], scale: [14, 4, 1] },
+      // Low frontal panel: the silver gradient near the habaki.
+      { intensity: 1.2, position: [-4, -1.5, 6], scale: [6, 1.6, 1] },
+      // Side panels for the edges and the guard.
+      { intensity: 1.2, position: [-7, 1, 0], rotation: [0, Math.PI / 2, 0], scale: [8, 3, 1] },
+      { intensity: 0.7, position: [7, 1, 0], rotation: [0, -Math.PI / 2, 0], scale: [8, 3, 1] },
+      // Back rim: separates the dark steel from a dark page.
+      { intensity: 1.6, position: [0, 2, -7], scale: [14, 1.2, 1] },
+      // Floor bounce, warm and dim.
+      { intensity: 0.3, color: '#d9cbb5', position: [0, -5, 0], rotation: [-Math.PI / 2, 0, 0], scale: [14, 8, 1] },
+    ],
+  },
+  light: {
+    // Warm, paper-like fill, with a darker ground so the underside keeps shape.
+    hemisphere: ['#fbf6ee', '#5d5549', 0.55],
+    key: { color: '#fff4e6', intensity: 1.35 },
+    rim: 0.4,
+    room: '#c9c0b2',
+    environmentIntensity: 1,
+    exposure: 1,
+    panels: [
+      // Ceiling soft box, broad and bright: the silver of the flat.
+      { intensity: 2.2, color: '#fffaf2', position: [0, 6, 1], rotation: [Math.PI / 2, 0, 0], scale: [14, 4, 1] },
+      // Frontal panel: a soft highlight that runs down the blade.
+      { intensity: 1.4, color: '#fffaf2', position: [-3, -1, 6], scale: [8, 2, 1] },
+      // Side panels for the edges and the guard.
+      { intensity: 1.1, position: [-7, 1, 0], rotation: [0, Math.PI / 2, 0], scale: [8, 3, 1] },
+      { intensity: 0.9, position: [7, 1, 0], rotation: [0, -Math.PI / 2, 0], scale: [8, 3, 1] },
+      // Dark flags (the page's ink): the dark band along the lower bevel and a
+      // dark back, so the edge and spine stay drawn against the paper.
+      { intensity: 1, color: '#1f1b16', position: [0, -5, 1], rotation: [-Math.PI / 2, 0, 0], scale: [14, 3, 1] },
+      { intensity: 1, color: '#2a2622', position: [0, 1, -7], scale: [14, 2.5, 1] },
+    ],
+  },
+};
+
 function Studio() {
-  // On the dark page the near-black steel needs brighter reflections to keep
-  // its outline; on the light page the render's balance works as is.
   const dark = useDarkTheme();
+  const theme = dark ? 'dark' : 'light';
+  const setup = STUDIO[theme];
+  const gl = useThree((state) => state.gl);
   const invalidate = useThree((state) => state.invalidate);
-  useEffect(() => invalidate(), [dark, invalidate]);
+  useEffect(() => {
+    gl.toneMappingExposure = setup.exposure;
+    invalidate();
+  }, [gl, setup, invalidate]);
 
   return (
     <>
-      <hemisphereLight args={['#f4f1ec', '#2a2622', dark ? 0.45 : 0.35]} />
-      <directionalLight position={[3, 5, 6]} intensity={1.5} />
-      <directionalLight position={[-4, 2, -5]} intensity={dark ? 1.6 : 1.1} />
-      <Environment resolution={512} frames={1} environmentIntensity={dark ? 1.45 : 1}>
-        {/* A dark room: the steel reads near black, with bright bands where it
-            catches the soft boxes, as in the render. */}
-        <color attach="background" args={['#161616']} />
-        {/* Ceiling soft box: the broad highlight along the flat of the blade. */}
-        <Lightformer form="rect" intensity={1.7} position={[0, 6, 1]} rotation-x={Math.PI / 2} scale={[14, 4, 1]} />
-        {/* Low frontal panel: the silver gradient near the habaki. */}
-        <Lightformer form="rect" intensity={1.2} position={[-4, -1.5, 6]} scale={[6, 1.6, 1]} />
-        {/* Side panels for the edges and the guard. */}
-        <Lightformer form="rect" intensity={1.2} position={[-7, 1, 0]} rotation-y={Math.PI / 2} scale={[8, 3, 1]} />
-        <Lightformer form="rect" intensity={0.7} position={[7, 1, 0]} rotation-y={-Math.PI / 2} scale={[8, 3, 1]} />
-        {/* Back rim: separates the dark steel from a dark page. */}
-        <Lightformer form="rect" intensity={1.6} position={[0, 2, -7]} scale={[14, 1.2, 1]} />
-        {/* Floor bounce, warm and dim. */}
-        <Lightformer form="rect" intensity={0.3} color="#d9cbb5" position={[0, -5, 0]} rotation-x={-Math.PI / 2} scale={[14, 8, 1]} />
+      <hemisphereLight args={setup.hemisphere} />
+      <directionalLight position={[3, 5, 6]} color={setup.key.color} intensity={setup.key.intensity} />
+      <directionalLight position={[-4, 2, -5]} intensity={setup.rim} />
+      {/* The cube map renders once per theme (frames={1} renders again when
+          its children change), not every frame. */}
+      <Environment resolution={512} frames={1} environmentIntensity={setup.environmentIntensity}>
+        <color attach="background" args={[setup.room]} />
+        {setup.panels.map((panel, i) => (
+          // Keyed by theme: each room mounts fresh, with no rotation left over.
+          <Lightformer key={`${theme}-${i}`} form="rect" {...panel} />
+        ))}
       </Environment>
     </>
   );

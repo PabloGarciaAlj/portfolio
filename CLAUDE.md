@@ -260,18 +260,17 @@ Angular · Docker · MinIO · LLMs
 ### 7.3 Proyectos
 
 Los cuatro primeros son de las prácticas: `confidential: true` y descripción genérica.
-Los nombres internos van entre paréntesis **solo como referencia para ti**. No se publican
-salvo que Pablo lo confirme.
+Sus nombres internos y los de los clientes no se escriben en este archivo (el repositorio es
+público) ni se publican en la web salvo que Pablo lo confirme.
 
 | slug | Título público | Contexto | Qué destacar | Stack |
 | --- | --- | --- | --- | --- |
 | `personaje-3d-videojuego` | Personaje 3D para videojuego de acción | TFG, 2026 | Proceso completo: siluetas y referencias → modelado → UVs → texturizado PBR → rig → animación → integración en motor. Estética japonesa con fantasía oscura / soulslike. Prototipo jugable para Windows. **Es el proyecto más diferencial: visor 3D en la página.** | Blender, Substance 3D Painter, Rigify, Mixamo, Rokoko Studio Live, Unity |
-| `riesgos-ia-multitenant` | Plataforma de gestión de riesgos de la IA (AI Risk) | Prácticas, 2026 | Migración de Lovable/Supabase a on-premise. Arquitectura multi-tenant con una base de datos PostgreSQL por empresa; el tenant se resuelve en servidor a partir del JWT y el cliente nunca elige la base de datos. Almacenamiento S3 con MinIO. | Fastify, Prisma, PostgreSQL, Redis, MinIO, JWT, TanStack Start/Router/Query, Tailwind, shadcn/ui |
-| `contratacion-publica-ia` | Gestión de expedientes de contratación pública con IA (AUREA) | Prácticas, 2026 | Generación asistida de documentos con LLMs, biblioteca de ejemplos con búsqueda semántica (RAG, embeddings, pgvector), colas de trabajo con BullMQ, corrección de vulnerabilidades de autorización tras una auditoría de seguridad. | Fastify, Prisma, PostgreSQL + pgvector, Redis, BullMQ, MinIO, React, Vite |
-| `asistente-voz-mayores` | Asistente conversacional y de voz para personas mayores (IBH · Amy) | Prácticas, 2026 | Panel de control y dashboard de valores biométricos en Angular 19 + Tailwind, con componentes accesibles, sobre una API Fastify integrada con OpenAI y Gemini. | Angular 19, Tailwind, Fastify, Prisma, PostgreSQL |
-| `legaltech-reclamaciones` | Plataforma legal-tech de reclamaciones aéreas (Juridocraft) | Prácticas, 2026 | Migración del frontend React a la API propia; procesamiento de PDF/DOCX con OCR. | React, Vite, Fastify, Prisma, PostgreSQL, Tesseract.js |
+| `riesgos-ia-multitenant` | Plataforma de gestión de riesgos de la IA | Prácticas, 2026 | Migración de Lovable/Supabase a on-premise. Arquitectura multi-tenant con una base de datos PostgreSQL por empresa; el tenant se resuelve en servidor a partir del JWT y el cliente nunca elige la base de datos. Almacenamiento S3 con MinIO. | Fastify, Prisma, PostgreSQL, Redis, MinIO, JWT, TanStack Start/Router/Query, Tailwind, shadcn/ui |
+| `contratacion-publica-ia` | Gestión de expedientes de contratación pública con IA | Prácticas, 2026 | Generación asistida de documentos con LLMs, biblioteca de ejemplos con búsqueda semántica (RAG, embeddings, pgvector), colas de trabajo con BullMQ, corrección de vulnerabilidades de autorización tras una auditoría de seguridad. | Fastify, Prisma, PostgreSQL + pgvector, Redis, BullMQ, MinIO, React, Vite |
+| `asistente-voz-mayores` | Asistente conversacional y de voz para personas mayores | Prácticas, 2026 | Panel de control y dashboard de valores biométricos en Angular 19 + Tailwind, con componentes accesibles, sobre una API Fastify integrada con OpenAI y Gemini. | Angular 19, Tailwind, Fastify, Prisma, PostgreSQL |
+| `legaltech-reclamaciones` | Plataforma legal-tech de reclamaciones aéreas | Prácticas, 2026 | Migración del frontend React a la API propia; procesamiento de PDF/DOCX con OCR. | React, Vite, Fastify, Prisma, PostgreSQL, Tesseract.js |
 | `crowdcompass` | CrowdCompass | Académico, 2025 – 2026 | Web de gestión de eventos con modelo 3D interactivo y chatbot, en producción en crowdcompass.ovh. Despliegue propio con Apache y SSH; metodología ABP. Equipo de cinco. **Parte de Pablo (confirmada):** landing, `/home` de usuario y login; interfaz del chatbot y su conexión frontend → backend → Dialogflow (el agente y sus intents no son suyos); servidor OVH completo (Apache, HTTPS con Let's Encrypt, cabeceras de seguridad y CSP, despliegues). 158 de 463 commits. | Angular, TypeScript, Node.js, MySQL, Apache |
-| `digitalforge` | DigitalForge | Académico, 2025 | Gestión de assets digitales (imagen, 3D, audio, vídeo) con carga, etiquetado y búsqueda. **Prioridad baja:** `featured: false` o al final. | React |
 
 `TODO (Pablo):` confirmar el rol exacto en cada proyecto de prácticas, qué se puede
 nombrar públicamente y qué imágenes hay disponibles (capturas propias, renders del TFG,

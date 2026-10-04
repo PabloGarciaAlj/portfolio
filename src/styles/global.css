@@ -26,6 +26,8 @@
   --line-strong: rgb(31 27 22 / 0.3);
   --accent: #b0371a;
   --accent-ink: #fbf8f3;
+  --glass: rgb(247 243 236 / 0.62);
+  --glass-edge: rgb(255 255 255 / 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -41,6 +43,8 @@
     --line-strong: rgb(237 237 234 / 0.26);
     --accent: #f06a45;
     --accent-ink: #0f0f0e;
+    --glass: rgb(23 23 22 / 0.6);
+    --glass-edge: rgb(237 237 234 / 0.06);
   }
 }
 
@@ -57,6 +61,8 @@
   --line-strong: rgb(237 237 234 / 0.26);
   --accent: #f06a45;
   --accent-ink: #0f0f0e;
+  --glass: rgb(23 23 22 / 0.6);
+  --glass-edge: rgb(237 237 234 / 0.06);
 }
 
 /*
@@ -267,6 +273,23 @@
   bottom: calc(var(--katana-bleed-bottom) * -1);
   /* Soft top and bottom edges: the katana fades out instead of being cut. */
   mask-image: linear-gradient(to bottom, transparent, #000 56px, #000 calc(100% - 56px), transparent);
+}
+/*
+ * TFG card over the katana: frosted glass in both themes. The blur turns the
+ * blade behind it into soft light and shade, so the text keeps its contrast;
+ * the top inner edge catches a little light. Without backdrop-filter it stays
+ * a solid surface.
+ */
+.glass-card {
+  background-color: var(--surface);
+  box-shadow: inset 0 1px 0 var(--glass-edge);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass-card {
+    background-color: var(--glass);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    backdrop-filter: blur(18px) saturate(1.2);
+  }
 }
 /* Static render placed like the final 3D pose (variables set inline). */
 .katana-poster {

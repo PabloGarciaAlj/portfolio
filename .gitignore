@@ -34,6 +34,8 @@ pnpm-debug.log*
 .prettiercache
 .lighthouseci/
 coverage/
+test-results/
+playwright-report/
 *.tsbuildinfo
 
 # --- Claude Code (skills and local settings) ---
@@ -44,8 +46,12 @@ coverage/
 ~$*
 
 # --- 3D working files (only the exported .glb goes in public/models/) ---
+*.blend
 *.blend1
 *.blend@
+*.fbx
+*.spp
+*.unitypackage
 
 # --- Editors ---
 .idea/
